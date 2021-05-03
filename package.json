@@ -1,0 +1,27 @@
+{
+  "name": "ksql",
+  "version": "1.0.0",
+  "description": "kubenernetes sql based cli ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manshaaazar/ksql.git"
+  },
+  "keywords": [
+    "kubernetes",
+    "sql"
+  ],
+  "author": "manshaaazar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/manshaaazar/ksql/issues"
+  },
+  "homepage": "https://github.com/manshaaazar/ksql#readme",
+  "dependencies": {
+    "commander": "^7.2.0",
+    "sqlite-parser": "^1.0.1"
+  }
+}
