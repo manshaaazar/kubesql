@@ -22,16 +22,15 @@ module.exports = {
     const specTable = generateTable(spec);
     const metadataTable = generateTable(metadata);
     const rootTable = generateTable({ kind, apiVersion });
-    // console.log(specTable);
-    // console.log(statusTable);
-    //  console.log(metadataTable);
-    //  console.log(rootTable);
+    //console.log(specTable);
+    //console.log(statusTable);
+    //console.log(metadataTable);
+    //sconsole.log(rootTable);
     const rootLevel = new cliTable({
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
       chars: { left: "", right: "", top: "", bottom: "" },
     });
     rootLevel.push(
-      { Namespace: metadata.name },
       { root: rootTable },
       { status: statusTable },
       { spec: specTable },
@@ -54,11 +53,7 @@ module.exports = {
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
       chars: { left: "", right: "", top: "", bottom: "" },
     });
-    rootLevel.push(
-      { Namespace: details.name },
-      { root: rootTable },
-      { details: detailsTable }
-    );
+    rootLevel.push({ root: rootTable }, { details: detailsTable });
     const finalTable = rootLevel.toString();
     return finalTable;
   },

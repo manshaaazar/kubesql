@@ -1,3 +1,4 @@
+const _ = require("lodash");
 module.exports = {
   namespace(values) {
     return {
@@ -13,41 +14,30 @@ module.exports = {
     let metadata = {};
     let type = "";
     if (values.type === "dockerconfigjson") {
-      const encoded = Buffer.from(`${values.dockerconfigjson}`).toString(
-        "base64"
-      );
-      console.log("encode-dockerconfigjson", encoded);
-      const decodedConfig = Buffer.from(encoded, "base64").toString("ascii");
-      console.log("decodeConfig", decodedConfig);
       data = {
-        ".dockerconfigjson": `| ${encoded}`,
+        ".dockerconfigjson": `| ${values.dockerconfigjson}`,
       };
       type = values.type;
       metadata = {
         name: values.name,
-        namespace: namespace,
+        ...(values.namespace && { namespace: namespace }),
       };
     } else if (values.type === "dockercfg") {
       type = values.type;
-      metadata = {
-        name: values.name,
-        namespace: namespace,
-      };
-      const encoded = Buffer.from(`${values.dockercfg}`).toString("base64");
-
       data = {
-        ".dockercfg": `| ${encoded}`,
+        ".dockercfg": `| ${values.dockercfg}`,
       };
     } else if (values.type === "sa") {
       data = values.data;
       metadata = {
         name: values.name,
+        ...(values.namespace && { namespace: namespace }),
         annotations: {
           "kubernetes.io/service-account.name": values.sa,
         },
       };
       type = values.type;
-    } else {
+    } else if (values.type === "opaque") {
       // encode whole keys values.keys object
       let encodedData = {};
       const dataKeys = Object.keys(values.data);
@@ -58,10 +48,11 @@ module.exports = {
       });
       console.log("encodedData", encodedData);
       data = encodedData;
-      type = values.type;
+      type = _.capitalize(values.type);
+
       metadata = {
         name: values.name,
-        namespace: namespace,
+        ...(values.namespace && { namespace: namespace }),
       };
     }
     return {

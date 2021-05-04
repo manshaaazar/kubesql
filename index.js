@@ -1,9 +1,9 @@
 const cli = require("commander");
-const { parseQuery } = require("./src/helpers/queryparser");
+//const { parseQuery } = require("./src/helpers/queryparser");
+const queryParser = require("./src/helpers/commandParser");
 const resourceGenerator = require("./src/helpers/resourceObject");
 const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
 const tableGenerator = require("./src/helpers/table");
-
 cli.version("1.0.0").description("kubernetes strucuted query language");
 // create namespace command
 const create = cli
@@ -29,33 +29,17 @@ const create = cli
   );
 // create namesapce command
 create
-  .command("namespace <keys>")
+  .command("namespace <name> ")
   .alias("n")
   .description("create a namespace")
-  .action((keys) => {
-    parseQuery("namespace", keys)
-      .then((parsedQuery) => {
-        console.log("parsedQuery", parsedQuery.statement[0].definition);
-        // generate values object from parsedQuery
-        // pass values object to resource function and get resource object
-        // create that resource in cluster
-        const keys = parsedQuery.statement[0].definition;
-        const values = {
-          name: keys[0].datatype.variant,
-        };
-        const namespaceManifest = resourceGenerator.namespace(values);
-        console.log(namespaceManifest);
-        loadKubernetesResourceDefault(namespaceManifest)
-          .then((response) => {
-            // console.log("response", response.body);
-            console.log(tableGenerator.successTable(response.body));
-          })
-          .catch((err) => {
-            console.log("err", err.body);
-            console.log(tableGenerator.errTable(err.body));
-          });
-      })
-      .catch((err) => console.log("err", err));
+  .action((name) => {
+    const values = {
+      name,
+    };
+    const namespaceManifest = resourceGenerator.namespace(values);
+    loadKubernetesResourceDefault(namespaceManifest)
+      .then((res) => console.log(tableGenerator.successTable(res.body)))
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
   })
   .addHelpText(
     "after",
@@ -66,10 +50,45 @@ create
   );
 // create secret command
 create
-  .command("secret <keys>")
+  .command("secret <name> <keys>")
   .alias("sec")
   .description("create a secret")
-  .action((keys) => console.log(keys))
+  .action((name, keys) => {
+    console.log(keys);
+    const parsedQuery = queryParser.parse(keys);
+    const values = {
+      name,
+      data: {},
+    };
+    parsedQuery.forEach((entry, index) => {
+      entry = entry.split(" ");
+      if (index === 0) {
+        values[`${entry[0]}`] = entry[1];
+      } else {
+        if (values.type === "opaque") {
+          values.data[`${entry[0]}`] = entry[1];
+        } else {
+          values[`${entry[0]}`] = entry[1];
+        }
+      }
+    });
+    // console.log("values", values);
+    const secretManifest = resourceGenerator.secret(values);
+    loadKubernetesResourceDefault(secretManifest)
+      .then((res) => {
+        const { kind, apiVersion, metadata, data, type } = res.body;
+        console.log(
+          tableGenerator.successTable({
+            kind,
+            apiVersion,
+            metadata,
+            data,
+            type,
+          })
+        );
+      })
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
   .addHelpText(
     "after",
     `
