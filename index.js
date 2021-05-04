@@ -1,5 +1,8 @@
-const { Command, description } = require("commander");
 const cli = require("commander");
+const { parseQuery } = require("./src/helpers/queryparser");
+const resourceGenerator = require("./src/helpers/resourceObject");
+const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
+const tableGenerator = require("./src/helpers/table");
 
 cli.version("1.0.0").description("kubernetes strucuted query language");
 // create namespace command
@@ -30,7 +33,29 @@ create
   .alias("n")
   .description("create a namespace")
   .action((keys) => {
-    console.log(keys);
+    parseQuery("namespace", keys)
+      .then((parsedQuery) => {
+        console.log("parsedQuery", parsedQuery.statement[0].definition);
+        // generate values object from parsedQuery
+        // pass values object to resource function and get resource object
+        // create that resource in cluster
+        const keys = parsedQuery.statement[0].definition;
+        const values = {
+          name: keys[0].datatype.variant,
+        };
+        const namespaceManifest = resourceGenerator.namespace(values);
+        console.log(namespaceManifest);
+        loadKubernetesResourceDefault(namespaceManifest)
+          .then((response) => {
+            // console.log("response", response.body);
+            console.log(tableGenerator.successTable(response.body));
+          })
+          .catch((err) => {
+            console.log("err", err.body);
+            console.log(tableGenerator.errTable(err.body));
+          });
+      })
+      .catch((err) => console.log("err", err));
   })
   .addHelpText(
     "after",
