@@ -164,9 +164,10 @@ create
       values[`${entry[0]}`] = entry[1];
     });
     const persistentVolumeManifest = resourceGenerator.pv(values);
+    console.log("pvManifest", persistentVolumeManifest);
     loadKubernetesResourceDefault(persistentVolumeManifest)
-      .then((res) => console.log(res.body))
-      .catch((err) => tableGenerator.errTable(err.body));
+      .then((res) => console.log(res))
+      .catch((err) => console.log(err.body));
   })
   .addHelpText(
     "after",

@@ -131,6 +131,7 @@ module.exports = {
         }),
       },
       spec: {
+        volumeModes: "Filesystem",
         capacity: {
           storage: values.storage,
         },
