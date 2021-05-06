@@ -1,5 +1,5 @@
+#!/usr/bin/env node
 const cli = require("commander");
-//const { parseQuery } = require("./src/helpers/queryparser");
 const queryParser = require("./src/helpers/commandParser");
 const resourceGenerator = require("./src/helpers/resourceObject");
 const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
@@ -13,18 +13,18 @@ const create = cli
     "after",
     `
   Examples:
-    $ create namespace | n 
-    $ create secret    | sec
-    $ create service   | ser
-    $ create persistentVolume | pv
-    $ create persistentVolumeClaim | pvc 
-    $ create rsourceQuota | rq
-    $ create role | r
-    $ create roleBinding | rb 
-    $ create clusterRole | cr
-    $ create clsuterRoleBinding | crb
-    $ create deployment | dep 
-    $ create statefulSet | ss
+    $ create namespace                      | n 
+    $ create secret                         | sec
+    $ create service                        | ser
+    $ create persistentVolume               | pv
+    $ create persistentVolumeClaim          | pvc 
+    $ create rsourceQuota                   | rq
+    $ create role                           | r
+    $ create roleBinding                    | rb 
+    $ create clusterRole                    | cr
+    $ create clsuterRoleBinding             | crb
+    $ create deployment                     | dep 
+    $ create statefulSet                    | ss
   `
   );
 // create namesapce command
@@ -76,9 +76,10 @@ create
     const secretManifest = resourceGenerator.secret(values);
     loadKubernetesResourceDefault(secretManifest)
       .then((res) => {
+        console.log("res", res.body);
         const { kind, apiVersion, metadata, data, type } = res.body;
         console.log(
-          tableGenerator.successTable({
+          tableGenerator.secretSuccessTable({
             kind,
             apiVersion,
             metadata,
@@ -93,7 +94,85 @@ create
     "after",
     `
   Example: 
-    $ secret "(secret value,secret value, ...)"
+    $ secret <secretName> "(secret value,secret value, ...)"
+  `
+  );
+create
+  .command("service <name> <keys>")
+  .alias("ser")
+  .description("create a service")
+  .action((name, keys) => {
+    //console.log("keys", keys);
+    const parsedQuery = queryParser.parse(keys);
+    //  console.log("parsedQuery", parsedQuery);
+    const values = {
+      name,
+    };
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      values[`${entry[0]}`] = entry[1];
+    });
+    console.log("values", values);
+    const serviceManifest = resourceGenerator.service(values);
+    loadKubernetesResourceDefault(serviceManifest)
+      .then((res) => console.log(tableGenerator.serviceSuccessTable(res.body)))
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create service <serviceName> "(namesapce default,type loadBalancer,app nginx, port 3000)"
+  `
+  );
+create
+  .command("persistentVolumeClaim <name> <keys>")
+  .alias("pvc")
+  .description("create a persistentVolumeClaim")
+  .action((name, keys) => {
+    const parsedQuery = queryParser.parse(keys);
+    let values = {
+      name,
+    };
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      values[`${entry[0]}`] = entry[1];
+    });
+    const persistentVolumeClaimManifest = resourceGenerator.pvc(values);
+    loadKubernetesResourceDefault(persistentVolumeClaimManifest)
+      .then((res) => console.log(tableGenerator.pvcSuccessTable(res.body)))
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create persistentVolumeClaim | pvc <pvName> "(namepsace default,label mypvc,pvSelector mypv,accessModes ReadWriteOnce,sc default,storage 1Gi)" 
+  `
+  );
+create
+  .command("persistentVolume <name> <keys>")
+  .alias("pv")
+  .description("create a persistentVolume")
+  .action((name, keys) => {
+    const parsedQuery = queryParser.parse(keys);
+    const values = {
+      name,
+    };
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      values[`${entry[0]}`] = entry[1];
+    });
+    const persistentVolumeManifest = resourceGenerator.pv(values);
+    loadKubernetesResourceDefault(persistentVolumeManifest)
+      .then((res) => console.log(res.body))
+      .catch((err) => tableGenerator.errTable(err.body));
+  })
+  .addHelpText(
+    "after",
+    `
+    Example:
+      $ create persistentVolume | pv <pvName> "(namespace default,label mypv,storage 1Gi,accessModes ReadWriteOnce,sc default,reclaimPolicy Retained)"
   `
   );
 cli.parse(process.argv);

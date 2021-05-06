@@ -9,7 +9,7 @@ module.exports = {
       },
     };
   },
-  secret(values, namespace) {
+  secret(values) {
     let data = {};
     let metadata = {};
     let type = "";
@@ -20,18 +20,22 @@ module.exports = {
       type = values.type;
       metadata = {
         name: values.name,
-        ...(values.namespace && { namespace: namespace }),
+        ...(values.namespace && { namespace: values.namespace }),
       };
     } else if (values.type === "dockercfg") {
       type = values.type;
       data = {
         ".dockercfg": `| ${values.dockercfg}`,
       };
+      metadata = {
+        name: values.name,
+        ...(values.namespace && { namespace: values.namespace }),
+      };
     } else if (values.type === "sa") {
       data = values.data;
       metadata = {
         name: values.name,
-        ...(values.namespace && { namespace: namespace }),
+        ...(values.namespace && { namespace: values.namespace }),
         annotations: {
           "kubernetes.io/service-account.name": values.sa,
         },
@@ -52,7 +56,7 @@ module.exports = {
 
       metadata = {
         name: values.name,
-        ...(values.namespace && { namespace: namespace }),
+        ...(values.namespace && { namespace: values.namespace }),
       };
     }
     return {
@@ -63,13 +67,13 @@ module.exports = {
       data,
     };
   },
-  service(values, namespace) {
+  service(values) {
     return {
       apiVersion: "v1",
       kind: "Service",
       metadata: {
         name: values.name,
-        namespace: namespace,
+        ...(values.namespace && { namespace: values.namespace }),
       },
       spec: {
         type: values.type,
@@ -78,23 +82,21 @@ module.exports = {
         },
         ports: [
           {
-            port: values.port,
-            targetPort: values.port,
+            port: parseInt(values.port),
+            targetPort: parseInt(values.port),
           },
         ],
       },
     };
   },
-  pvc(values, namespace) {
+  pvc(values) {
     return {
       apiVersion: "v1",
       kind: "PersistentVolumeClaim",
       metadata: {
         name: values.name,
-        namespace: namespace,
-        labels: {
-          app: values.app,
-        },
+        ...(values.namespace && { namespace: values.namespace }),
+        ...(values.label && { labels: { pvc: values.label } }),
       },
       spec: {
         ...(values.pvSelector && {
@@ -106,7 +108,7 @@ module.exports = {
         }),
 
         storageClassName: values.sc,
-        accessModes: ["ReadWriteOnce"],
+        accessModes: [`${values.accessModes}`],
         resources: {
           requests: {
             storage: values.storage,
@@ -115,23 +117,27 @@ module.exports = {
       },
     };
   },
-  pv(values, namespace) {
+  pv(values) {
     return {
       apiVersion: "v1",
       kind: "PersistentVolume",
       metadata: {
         name: values.name,
-        namespace: namespace,
-        labels: {
-          pv: values.name,
-        },
+        ...(values.namespace && { namespace: values.namespace }),
+        ...(values.label && {
+          labels: {
+            pv: values.label,
+          },
+        }),
       },
       spec: {
         capacity: {
           storage: values.storage,
         },
-        accessModes: ["ReadWriteOnce"],
-        persistentVolumeReclaimPolicy: values.reclaimPolicy,
+        accessModes: [`${values.accessModes}`],
+        ...(values.reclaimPolicy && {
+          persistentVolumeReclaimPolicy: values.reclaimPolicy,
+        }),
         storageClassName: values.sc,
       },
     };

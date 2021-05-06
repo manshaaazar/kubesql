@@ -1,8 +1,10 @@
 {
-  "name": "ksql",
+  "name": "kubesql",
   "version": "1.0.0",
-  "description": "kubenernetes sql based cli ",
+  "description": "kubenernetes SQL based cli ",
   "main": "index.js",
+  "preferGlobal": true,
+  "bin": "./index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,7 +14,8 @@
   },
   "keywords": [
     "kubernetes",
-    "sql"
+    "sql",
+    "cli"
   ],
   "author": "manshaaazar",
   "license": "MIT",
@@ -25,7 +28,6 @@
     "cli-table": "^0.3.6",
     "commander": "^7.2.0",
     "lodash": "^4.17.21",
-    "prettytable": "^0.3.1",
-    "sqlite-parser": "^1.0.1"
+    "prettytable": "^0.3.1"
   }
 }

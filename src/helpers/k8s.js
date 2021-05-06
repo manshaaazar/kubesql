@@ -9,10 +9,7 @@ module.exports = {
     return new Promise((resolve, reject) => {
       kubernetesApi
         .create(object)
-        .then((result) => {
-          resolve(result);
-          console.log("result", result.body);
-        })
+        .then((result) => resolve(result))
         .catch((err) => reject(err));
     });
   },
