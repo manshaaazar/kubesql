@@ -1,7 +1,7 @@
 const kubernetes = require("@kubernetes/client-node");
 const kubernetesConfig = new kubernetes.KubeConfig();
-//kubernetesConfig.loadFromDefault();
-kubernetesConfig.loadFromFile('./kube.yaml')
+kubernetesConfig.loadFromDefault();
+//kubernetesConfig.loadFromFile('./kube.yaml')
 const kubernetesApi = kubernetesConfig.makeApiClient(
     kubernetes.KubernetesObjectApi
 );
