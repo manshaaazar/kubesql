@@ -182,4 +182,38 @@ module.exports = {
     const finalTable = rootLevel.toString();
     return finalTable;
   },
+  deploymentSuccessTable({ kind, apiVersion, metadata, spec }) {
+    const rootTable = generateTable({ kind, apiVersion, status: "Success" });
+    const metadataTable = generateTable(metadata);
+    const labelsTable = generateTable(metadata.labels);
+    const {
+      revisionHistoryLimit,
+      progressDeadlineSeconds,
+      replicas,
+      selector,
+      strategy,
+    } = spec;
+    const specTable = generateTable({
+      revisionHistoryLimit,
+      progressDeadlineSeconds,
+      replicas,
+    });
+    const selectorTable = generateTable(selector.matchLabels);
+    const { type } = strategy;
+    const starategyTable = generateTable({ type });
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push(
+      { root: rootTable },
+      { metadata: metadataTable },
+      { labels: labelsTable },
+      { spec: specTable },
+      { selector: selectorTable },
+      { strategy: starategyTable }
+    );
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
 };

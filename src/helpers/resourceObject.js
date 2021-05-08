@@ -248,7 +248,7 @@ module.exports = {
       },
     };
   },
-  deployment(values, namespace) {
+  deployment(values) {
     return {
       apiVersion: "apps/v1",
       kind: "Deployment",
@@ -262,7 +262,7 @@ module.exports = {
       },
       spec: {
         selector: { matchLabels: { app: values.name } },
-        replicas: values.replicas,
+        ...(values.replicas && { replicas: values.replicas }),
         template: {
           metadata: {
             name: values.name,
@@ -298,15 +298,10 @@ module.exports = {
                 },
                 ...(values.command && { command: values.command }),
                 ...(values.args && { args: values.args }),
-                ...(values.mountPath && {
-                  volumeMounts: values.volumes.map((path) => {
-                    return {
-                      name: `${path.volume}-pvc`,
-                      mountPath: { name: path.mountPath },
-                    };
-                  }),
+                ...(values.volumePaths && {
+                  volumeMounts: values.volumePaths,
                 }),
-                ports: [{ containerPort: values.port }],
+                ports: [{ containerPort: parseInt(values.port) }],
                 ...(values.envs && {
                   envFrom: [{ secretRef: { name: values.secret } }],
                 }),

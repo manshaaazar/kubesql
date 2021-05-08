@@ -355,4 +355,46 @@ create
     $ create clusterRoleBinding | crb <clusterRoleBindingName> "(namespace default,subjectKind ServiceAccount,subjectName default,role roleName)"
   `
   );
+create
+  .command("deployment <name> <keys>")
+  .alias("deploy")
+  .description("create a deployment")
+  .action((name, keys) => {
+    const parsedQuery = queryParser.parse(keys);
+    console.log("parsedQuery", parsedQuery);
+    const values = {
+      name,
+      volumePaths: [],
+    };
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      if (entry[0] === "volumes") {
+        entry.shift();
+        values.volumes = entry;
+        entry.forEach((entry) => {
+          values.volumePaths.push({ name: entry });
+        });
+      } else if (entry[0] === "volumePaths") {
+        entry.shift();
+        entry.forEach((entry, index) => {
+          values.volumePaths[index].mountPath = entry;
+        });
+      } else {
+        values[`${entry[0]}`] = entry[1];
+      }
+    });
+    const deploymentManifest = resourceGenerator.deployment(values);
+    loadKubernetesResourceDefault(deploymentManifest)
+      .then((res) =>
+        console.log(tableGenerator.deploymentSuccessTable(res.body))
+      )
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create deployment | deploy <deploymentName> "(namespace default,port 3000,image manshaaazar/knight:latest,label mydpeloyment, ...)"
+  `
+  );
 cli.parse(process.argv);
