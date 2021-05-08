@@ -112,7 +112,12 @@ module.exports = {
     const selectorTable = generateTable(selector.matchLabels);
     const resourceTable = generateTable(resources.requests);
     const specTable = generateTable({ storageClassName, volumeMode });
-    const rootTable = generateTable({ kind, apiVersion, phase });
+    const rootTable = generateTable({
+      kind,
+      apiVersion,
+      phase,
+      status: "Success",
+    });
     const metadataTable = generateTable(metadata);
     const rootLevel = new cliTable({
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
@@ -144,6 +149,35 @@ module.exports = {
       { root: rootTable },
       { spec: specTable },
       { metadata: metadataTable }
+    );
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  roleSuccessTable({ kind, apiVersion, metadata, rules }) {
+    const rootTable = generateTable({ kind, apiVersion, status: "Success" });
+    const metadataTable = generateTable(metadata);
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable }, { metadata: metadataTable });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  roleBindingSuccessTable({ kind, apiVersion, metadata, subjects, roleRef }) {
+    const rootTable = generateTable({ kind, apiVersion, status: "Success" });
+    const roleRefTable = generateTable(roleRef);
+    const subjectsTable = generateTable(subjects[0]);
+    const metadataTable = generateTable(metadata);
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push(
+      { root: rootTable },
+      { metadata: metadataTable },
+      { roleRef: roleRefTable },
+      { subject: subjectsTable }
     );
     const finalTable = rootLevel.toString();
     return finalTable;
