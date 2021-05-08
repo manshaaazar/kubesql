@@ -203,13 +203,13 @@ module.exports = {
       kind: "RoleBinding",
       metadata: {
         name: values.name,
-        namespace: namespace,
+        ...(values.namespace && { namespace: values.namespace }),
       },
       subjects: [
         {
           kind: values.subjectKind,
           name: values.subjectName,
-          apiGroup: "rbac.authorization.k8s.io",
+          apiGroup: "",
         },
       ],
       roleRef: {
@@ -218,29 +218,14 @@ module.exports = {
       },
     };
   },
-  clusterRole(values, namespace) {
+  clusterRole(values) {
     return {
       apiVersion: "rbac.authorization.k8s.io/v1",
       kind: "ClusterRole",
       metadata: {
         name: values.name,
       },
-      rules: [
-        {
-          apiGroups: [
-            "",
-            "batch",
-            "extensions",
-            "apps",
-            "rbac.authorization.k8s.io",
-            "apiextensions.k8s.io",
-            "admissionregistration.k8s.io",
-            "policy",
-          ],
-          resources: values.resources,
-          verbs: values.verbs,
-        },
-      ],
+      rules: values.rules,
     };
   },
   clusterRoleBinding(values, namespace) {
@@ -270,8 +255,10 @@ module.exports = {
       namespace: values.namespace,
       metadata: {
         name: values.name,
-        namespace: namespace,
-        labels: { app: values.name },
+        ...(values.namespace && { namespace: values.namespace }),
+        ...(values.label && {
+          labels: { dep: values.label, app: values.name },
+        }),
       },
       spec: {
         selector: { matchLabels: { app: values.name } },
@@ -279,13 +266,15 @@ module.exports = {
         template: {
           metadata: {
             name: values.name,
-            labels: { app: values.name },
+            ...(values.label && {
+              labels: { dep: values.label, app: values.name },
+            }),
           },
           spec: {
             ...(values.volumes && {
               volumes: values.volumes.map((volume) => {
                 return {
-                  name: `${volume}-storage`,
+                  name: `${volume}-pvc`,
                   persistentVolumeClaim: { name: volume },
                 };
               }),
@@ -312,7 +301,7 @@ module.exports = {
                 ...(values.mountPath && {
                   volumeMounts: values.volumes.map((path) => {
                     return {
-                      name: `${path.volume}-storage`,
+                      name: `${path.volume}-pvc`,
                       mountPath: { name: path.mountPath },
                     };
                   }),
@@ -355,13 +344,6 @@ module.exports = {
         params,
       },
     };
-  },
-  tekton() {
-    const yaml = k8s.loadAllYaml(
-      fs.readFileSync("./static/yamls/tekton.yaml", "utf8")
-    );
-
-    return yaml;
   },
   pipelineRun(resourceName) {
     return {

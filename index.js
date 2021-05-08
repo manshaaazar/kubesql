@@ -234,21 +234,16 @@ create
           verbs: [],
         };
         entry = entry.split(" ");
-        console.log("entry", entry);
         rule.verbs.push(entry[0]);
         entry.shift();
-        console.log("shifted-entry", entry);
         rule.resources = entry;
         values.rules.push(rule);
       }
-      console.log("values", values);
       const roleManifest = resourceGenerator.role(values);
-      console.log("roleManifest", roleManifest);
-      console.log(values);
     });
     const roleManifest = resourceGenerator.role(values);
     loadKubernetesResourceDefault(roleManifest)
-      .then((res) => console.log(res.body))
+      .then((res) => console.log(tableGenerator.roleSuccessTable(res.body)))
       .catch((err) => console.log(tableGenerator.errTable(err.body)));
   })
   .addHelpText(
@@ -256,6 +251,108 @@ create
     `
   Example:
     $ create role | r <roleName> "(namespace default, get deployment services,put deployment services, ...)"
+  `
+  );
+create
+  .command("rolebinding <name> <keys>")
+  .alias("rb")
+  .description("crrate a role binding")
+  .action((name, keys) => {
+    const parsedQuery = queryParser.parse(keys);
+    const values = {
+      name,
+    };
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      values[`${entry[0]}`] = entry[1];
+    });
+    const roleBindingManifest = resourceGenerator.roleBinding(values);
+    loadKubernetesResourceDefault(roleBindingManifest)
+      .then((res) =>
+        console.log(tableGenerator.roleBindingSuccessTable(res.body))
+      )
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create rolebinding | rb <roleBindingName> "(namespace default,subjectKind ServiceAccount,subjectName default,role roleName)"
+  `
+  );
+create
+  .command("clusterRole <name> <keys>")
+  .alias("cr")
+  .description("create a cluster role")
+  .action((name, keys) => {
+    const parsedQuery = queryParser.parse(keys);
+    const values = {
+      name,
+      rules: [],
+    };
+    parsedQuery.forEach((entry, index) => {
+      if (index === 0) {
+        entry = entry.split(" ");
+        values[`${entry[0]}`] = entry[1];
+      } else {
+        const rule = {
+          apiGroups: [
+            "",
+            "batch",
+            "extensions",
+            "apps",
+            "rbac.authorization.k8s.io",
+            "apiextensions.k8s.io",
+            "admissionregistration.k8s.io",
+            "policy",
+          ],
+          resources: [],
+          verbs: [],
+        };
+        entry = entry.split(" ");
+        rule.verbs.push(entry[0]);
+        entry.shift();
+        rule.resources = entry;
+        values.rules.push(rule);
+      }
+    });
+    const clusterRoleManifest = resourceGenerator.clusterRole(values);
+    loadKubernetesResourceDefault(clusterRoleManifest)
+      .then((res) => console.log(tableGenerator.roleSuccessTable(res.body)))
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create clusterRole | cr <clusterRoleName> "(namespace default, get deployment services,put deployment services, ...)"
+  `
+  );
+create
+  .command("clusterRoleBinding <name> <keys>")
+  .alias("crb")
+  .description("crrate a cluster role binding")
+  .action((name, keys) => {
+    const parsedQuery = queryParser.parse(keys);
+    const values = {
+      name,
+    };
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      values[`${entry[0]}`] = entry[1];
+    });
+    const roleBindingManifest = resourceGenerator.roleBinding(values);
+    loadKubernetesResourceDefault(roleBindingManifest)
+      .then((res) =>
+        console.log(tableGenerator.roleBindingSuccessTable(res.body))
+      )
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create clusterRoleBinding | crb <clusterRoleBindingName> "(namespace default,subjectKind ServiceAccount,subjectName default,role roleName)"
   `
   );
 cli.parse(process.argv);
