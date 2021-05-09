@@ -1,4 +1,5 @@
 const cliTable = require("cli-table");
+const { method } = require("lodash");
 const generateTable = (value) => {
   const table = require("prettytable");
   if (value.managedFields) {
@@ -57,11 +58,10 @@ module.exports = {
     const finalTable = rootLevel.toString();
     return finalTable;
   },
-  secretSuccessTable({ kind, apiVersion, metadata, data, type, details }) {
+  secretSuccessTable({ kind, apiVersion, metadata, data, type }) {
     const dataTable = generateTable(data);
     const metadataTable = generateTable(metadata);
     const rootTable = generateTable({ kind, apiVersion, type });
-    const detailsTable = generateTable(details);
     const rootLevel = new cliTable({
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
       chars: { left: "", right: "", top: "", bottom: "" },
@@ -69,8 +69,7 @@ module.exports = {
     rootLevel.push(
       { root: rootTable },
       { data: dataTable },
-      { metadata: metadataTable },
-      { details: detailsTable }
+      { metadata: metadataTable }
     );
     const finalTable = rootLevel.toString();
     return finalTable;
@@ -182,6 +181,17 @@ module.exports = {
     const finalTable = rootLevel.toString();
     return finalTable;
   },
+  saSuccessTable({ kind, apiVersion, metadata }) {
+    const metadataTable = generateTable(metadata);
+    const rootTable = generateTable({ kind, apiVersion, status: "Success" });
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable }, { metadata: metadataTable });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
   deploymentSuccessTable({ kind, apiVersion, metadata, spec }) {
     const rootTable = generateTable({ kind, apiVersion, status: "Success" });
     const metadataTable = generateTable(metadata);
@@ -213,6 +223,50 @@ module.exports = {
       { selector: selectorTable },
       { strategy: starategyTable }
     );
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  imagebuildPushTaskSuccessTable({ kind, apiVersion }) {
+    const rootTable = generateTable({ kind, apiVersion });
+    const metadataTable = generateTable(metadataTable);
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable }, { metadata: metadataTable });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  pipelineResourceSuccessTable({ kind, apiVersion, metadata, spec }) {
+    const { type } = spec;
+    const rootTable = generateTable({
+      kind,
+      apiVersion,
+      type,
+      status: "Success",
+    });
+    const metadataTable = generateTable(metadata);
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable }, { metadata: metadataTable });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  pipelineRunSuccessTable({ kind, apiVersion, metadata, spec }) {
+    const rootTable = generateTable({
+      kind,
+      apiVersion,
+      timeout: spec.timeout,
+      status: "In Progress",
+    });
+    const metadataTable = generateTable(metadata);
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable }, { metadata: metadataTable });
     const finalTable = rootLevel.toString();
     return finalTable;
   },

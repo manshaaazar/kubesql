@@ -5,9 +5,8 @@ const queryParser = require("./src/helpers/commandParser");
 const resourceGenerator = require("./src/helpers/resourceObject");
 const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
 const tableGenerator = require("./src/helpers/table");
-const { padEnd } = require("lodash");
+const _ = require("lodash");
 cli.version("1.0.0").description("kubernetes strucuted query language");
-// create namespace command
 const create = cli
   .command("create")
   .description("create any kubernetes object resource ")
@@ -27,7 +26,9 @@ const create = cli
     $ create clsuterRoleBinding             | crb
     $ create deployment                     | dep 
     $ create statefulSet                    | ss
-  `
+    $ create imageConfig                    | iConfig
+    $ create imageBuilder                   | iBuilder
+    `
   );
 // create namesapce command
 create
@@ -60,25 +61,27 @@ create
     const parsedQuery = queryParser.parse(keys);
     const values = {
       name,
+      annotations: {},
       data: {},
     };
-    parsedQuery.forEach((entry, index) => {
+    parsedQuery.forEach((entry) => {
       entry = entry.split(" ");
-      if (index === 0) {
-        values[`${entry[0]}`] = entry[1];
+      if (entry[0] === "namespace") {
+        values.namespace = entry[1];
+      } else if (entry[0] === "type") {
+        values.type = entry[1];
+      } else if (entry[0] === "annotation") {
+        values.annotations[`${entry[1]}`] = entry[2];
       } else {
-        if (values.type === "opaque") {
-          values.data[`${entry[0]}`] = entry[1];
-        } else {
-          values[`${entry[0]}`] = entry[1];
-        }
+        entry[1] = entry[1].replace(/"/g, " ");
+        entry[1] = _.trim(entry[1]);
+        values.data[`${entry[0]}`] = entry[1];
       }
     });
-    // console.log("values", values);
+    console.log("values", values);
     const secretManifest = resourceGenerator.secret(values);
     loadKubernetesResourceDefault(secretManifest)
       .then((res) => {
-        console.log("res", res.body);
         const { kind, apiVersion, metadata, data, type } = res.body;
         console.log(
           tableGenerator.secretSuccessTable({
@@ -90,13 +93,15 @@ create
           })
         );
       })
-      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+      .catch((err) => {
+        console.log(tableGenerator.errTable(err.body));
+      });
   })
   .addHelpText(
     "after",
     `
   Example: 
-    $ secret <secretName> "(secret value,secret value, ...)"
+    $ secret <secretName> "(namespace default,secret value,secret value, ...)"
   `
   );
 create
@@ -239,7 +244,6 @@ create
         rule.resources = entry;
         values.rules.push(rule);
       }
-      const roleManifest = resourceGenerator.role(values);
     });
     const roleManifest = resourceGenerator.role(values);
     loadKubernetesResourceDefault(roleManifest)
@@ -397,4 +401,129 @@ create
     $ create deployment | deploy <deploymentName> "(namespace default,port 3000,image manshaaazar/knight:latest,label mydpeloyment, ...)"
   `
   );
+create
+  .command("serviceAccount <name> <keys>")
+  .alias("sa")
+  .description("create a service account")
+  .action((name, keys) => {
+    const parsedQuery = queryParser.parse(keys);
+    const values = {
+      name,
+      secrets: [],
+    };
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      if (entry[0] === "namespace") {
+        values[`${entry[0]}`] = entry[1];
+      } else {
+        values.secrets.push({ name: entry[1] });
+      }
+    });
+
+    const serviceAccountManifest = resourceGenerator.serviceAccount(values);
+    loadKubernetesResourceDefault(serviceAccountManifest)
+      .then((res) => console.log(tableGenerator.saSuccessTable(res.body)))
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create serviceAccount | sa <serviceAccountName> "(namespace default,secret secret1,secret secret2, ...)"
+  `
+  );
+create
+  .command("imageConfig <name> <keys>")
+  .alias("iConfig")
+  .description("create an imageConfig to configure the image creation process")
+  .action((name, keys) => {
+    const values = {};
+    const parsedQuery = queryParser.parse(keys);
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      values[`${entry[0]}`] = entry[1];
+    });
+    const { imageUrl, gitUrl, branch } = values;
+    const imageManifest = resourceGenerator.imageResources({
+      resourceName: name,
+      type: "image",
+      imageUrl,
+    });
+    const gitManifest = resourceGenerator.imageResources({
+      resourceName: name,
+      type: "git",
+      gitUrl,
+      branch,
+    });
+    const imageBuildPushTaskManifest = resourceGenerator.imageBuildPushTaskResource();
+    const { pipeline, pipelinePvc } = resourceGenerator.pipeline();
+    // load tekton pipeline
+    // load tekton image build push task
+    // load image build push task resources
+    // load tekton pvc
+    // load pipeline run
+    loadKubernetesResourceDefault(imageBuildPushTaskManifest)
+      .then((res) =>
+        console.log(tableGenerator.imagebuildPushTaskSuccessTable(res.body))
+      )
+      .catch((err) => {
+        return;
+      });
+    loadKubernetesResourceDefault(pipeline)
+      .then((res) =>
+        console.log(tableGenerator.imagebuildPushTaskSuccessTable(res.body))
+      )
+      .catch((err) => {
+        return;
+      });
+    loadKubernetesResourceDefault(pipelinePvc)
+      .then((res) => console.log(tableGenerator.pvcSuccessTable(res.body)))
+      .catch((err) => {
+        return;
+      });
+    loadKubernetesResourceDefault(imageManifest)
+      .then((res) =>
+        console.log(tableGenerator.pipelineResourceSuccessTable(res.body))
+      )
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+    loadKubernetesResourceDefault(gitManifest)
+      .then((res) =>
+        console.log(tableGenerator.pipelineResourceSuccessTable(res.body))
+      )
+      .catch((err) => tableGenerator.errTable(err.body));
+  })
+
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ create image | img <imageName> "(gitUrl https://github.com/manshaaazar/kubesql.git,branch master,imageUrl manshahesan/knight:latest)" 
+  `
+  );
+create
+  .command("imageBuilder <name> <keys>")
+  .alias("iBuilder")
+  .description("create a imageBuilder to trigger image creation process")
+  .action((name, keys) => {
+    const values = { name };
+    const parsedQuery = queryParser.parse(keys);
+    parsedQuery.forEach((entry) => {
+      entry = entry.split(" ");
+      values[`${entry[0]}`] = entry[1];
+    });
+    const imageBuilderManifest = resourceGenerator.pipelineRun(values);
+    loadKubernetesResourceDefault(imageBuilderManifest)
+      .then((res) =>
+        console.log(tableGenerator.pipelineResourceSuccessTable(res.body))
+      )
+      .catch((err) => console.log(tableGenerator.errTable(err.body)));
+  })
+  .addHelpText(
+    "after",
+    `
+  Example: 
+    $ create a imageBuilder | iBuilder <imageBuilderName> '(namespace default,sa serviceAccountName,gitResources resourceName,registryResource resourceName)'
+  `
+  );
+
 cli.parse(process.argv);

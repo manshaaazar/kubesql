@@ -11,61 +11,16 @@ module.exports = {
     };
   },
   secret(values) {
-    let data = {};
-    let metadata = {};
-    let type = "";
-    if (values.type === "dockerconfigjson") {
-      data = {
-        ".dockerconfigjson": `| ${values.dockerconfigjson}`,
-      };
-      type = values.type;
-      metadata = {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      };
-    } else if (values.type === "dockercfg") {
-      type = values.type;
-      data = {
-        ".dockercfg": `| ${values.dockercfg}`,
-      };
-      metadata = {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      };
-    } else if (values.type === "sa") {
-      data = values.data;
-      metadata = {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-        annotations: {
-          "kubernetes.io/service-account.name": values.sa,
-        },
-      };
-      type = values.type;
-    } else if (values.type === "opaque") {
-      // encode whole keys values.keys object
-      let encodedData = {};
-      const dataKeys = Object.keys(values.data);
-      dataKeys.forEach((key) => {
-        console.log("key", key);
-        const encodedValue = Buffer.from(values.data[key]).toString("base64");
-        encodedData[`${key}`] = encodedValue;
-      });
-      console.log("encodedData", encodedData);
-      data = encodedData;
-      type = _.capitalize(values.type);
-
-      metadata = {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      };
-    }
     return {
       apiVersion: "v1",
       kind: "Secret",
-      metadata,
-      type,
-      data,
+      metadata: {
+        name: values.name,
+        ...(values.namespace && { namespace: values.namespace }),
+        ...(values.annotations && { annotations: values.annotations }),
+      },
+      type: values.type,
+      stringData: values.data,
     };
   },
   service(values) {
@@ -88,6 +43,17 @@ module.exports = {
           },
         ],
       },
+    };
+  },
+  serviceAccount(values) {
+    return {
+      apiVersion: "v1",
+      kind: "ServiceAccount",
+      metadata: {
+        name: values.name,
+        ...(values.namespace && { namespace: values.namespace }),
+      },
+      secrets: values.secrets,
     };
   },
   pvc(values) {
@@ -312,16 +278,227 @@ module.exports = {
       },
     };
   },
-  imageResources({ kNamespace, resourceName, type, gitUrl, branch, imageUrl }) {
+  imageBuildPushTaskResource() {
+    const task = {
+      apiVersion: "tekton.dev/v1alpha1",
+      kind: "Task",
+      metadata: {
+        name: "buildpacks-v3-alpha",
+      },
+      spec: {
+        inputs: {
+          params: [
+            {
+              name: "BUILDER_IMAGE",
+              description:
+                "The image on which builds will run (must include v3 lifecycle and compatible buildpacks).",
+            },
+            {
+              name: "CACHE",
+              description: "The name of the persistent app cache volume.",
+              default: "empty-dir",
+            },
+            {
+              name: "USER_ID",
+              description: "The user ID of the builder image user.",
+              default: "1000",
+            },
+            {
+              name: "GROUP_ID",
+              description: "The group ID of the builder image user.",
+              default: "1000",
+            },
+            {
+              name: "PROCESS_TYPE",
+              description: "The default process type to set on the image.",
+              default: "web",
+            },
+            {
+              name: "SOURCE_SUBPATH",
+              description:
+                "A subpath within the `source` input where the source to build is located.",
+              default: "",
+            },
+          ],
+          resources: [
+            {
+              name: "source",
+              type: "git",
+            },
+          ],
+        },
+        outputs: {
+          resources: [
+            {
+              name: "image",
+              type: "image",
+            },
+          ],
+        },
+        stepTemplate: {
+          env: [
+            {
+              name: "CNB_PLATFORM_API",
+              value: "0.3",
+            },
+          ],
+        },
+        steps: [
+          {
+            name: "prepare",
+            image: "alpine",
+            imagePullPolicy: "Always",
+            command: ["/bin/sh"],
+            args: [
+              "-c",
+              'chown -R "$(inputs.params.USER_ID):$(inputs.params.GROUP_ID)" "/tekton/home" && chown -R "$(inputs.params.USER_ID):$(inputs.params.GROUP_ID)" "/layers" && chown -R "$(inputs.params.USER_ID):$(inputs.params.GROUP_ID)" "/cache" && chown -R "$(inputs.params.USER_ID):$(inputs.params.GROUP_ID)" "/workspace/source"\n',
+            ],
+            volumeMounts: [
+              {
+                name: "layers-dir",
+                mountPath: "/layers",
+              },
+              {
+                name: "$(inputs.params.CACHE)",
+                mountPath: "/cache",
+              },
+            ],
+            securityContext: {
+              privileged: true,
+            },
+          },
+          {
+            name: "detect",
+            image: "$(inputs.params.BUILDER_IMAGE)",
+            imagePullPolicy: "Always",
+            command: ["/cnb/lifecycle/detector"],
+            args: [
+              "-app=/workspace/source/$(inputs.params.SOURCE_SUBPATH)",
+              "-group=/layers/group.toml",
+              "-plan=/layers/plan.toml",
+            ],
+            volumeMounts: [
+              {
+                name: "layers-dir",
+                mountPath: "/layers",
+              },
+            ],
+          },
+          {
+            name: "analyze",
+            image: "$(inputs.params.BUILDER_IMAGE)",
+            imagePullPolicy: "Always",
+            command: ["/cnb/lifecycle/analyzer"],
+            args: [
+              "-layers=/layers",
+              "-group=/layers/group.toml",
+              "-cache-dir=/cache",
+              "$(outputs.resources.image.url)",
+            ],
+            volumeMounts: [
+              {
+                name: "$(inputs.params.CACHE)",
+                mountPath: "/cache",
+              },
+              {
+                name: "layers-dir",
+                mountPath: "/layers",
+              },
+            ],
+          },
+          {
+            name: "restore",
+            image: "$(inputs.params.BUILDER_IMAGE)",
+            imagePullPolicy: "Always",
+            command: ["/cnb/lifecycle/restorer"],
+            args: [
+              "-group=/layers/group.toml",
+              "-layers=/layers",
+              "-cache-dir=/cache",
+            ],
+            volumeMounts: [
+              {
+                name: "$(inputs.params.CACHE)",
+                mountPath: "/cache",
+              },
+              {
+                name: "layers-dir",
+                mountPath: "/layers",
+              },
+            ],
+          },
+          {
+            name: "build",
+            image: "$(inputs.params.BUILDER_IMAGE)",
+            imagePullPolicy: "Always",
+            command: ["/cnb/lifecycle/builder"],
+            args: [
+              "-app=/workspace/source/$(inputs.params.SOURCE_SUBPATH)",
+              "-layers=/layers",
+              "-group=/layers/group.toml",
+              "-plan=/layers/plan.toml",
+            ],
+            volumeMounts: [
+              {
+                name: "layers-dir",
+                mountPath: "/layers",
+              },
+            ],
+          },
+          {
+            name: "export",
+            image: "$(inputs.params.BUILDER_IMAGE)",
+            imagePullPolicy: "Always",
+            command: ["/cnb/lifecycle/exporter"],
+            args: [
+              "-app=/workspace/source/$(inputs.params.SOURCE_SUBPATH)",
+              "-layers=/layers",
+              "-group=/layers/group.toml",
+              "-cache-dir=/cache",
+              "-process-type=$(inputs.params.PROCESS_TYPE)",
+              "$(outputs.resources.image.url)",
+            ],
+            volumeMounts: [
+              {
+                name: "layers-dir",
+                mountPath: "/layers",
+              },
+              {
+                name: "$(inputs.params.CACHE)",
+                mountPath: "/cache",
+              },
+            ],
+          },
+        ],
+        volumes: [
+          {
+            name: "empty-dir",
+            emptyDir: {},
+          },
+          {
+            name: "layers-dir",
+            emptyDir: {},
+          },
+        ],
+      },
+    };
+    return task;
+  },
+  imageResources({ resourceName, type, gitUrl, branch, imageUrl }) {
     let params = [];
+    let metadata = {};
     if (type === "image") {
+      metadata = {
+        name: `${resourceName}-image`,
+      };
       params.push({
         name: "url",
-        value: imageUrl
-          ? imageUrl
-          : `denouementregistry.azurecr.io/${kNamespace}:${resourceName}`,
+        value: imageUrl,
       });
     } else if (type === "git") {
+      metadata = {
+        name: `${resourceName}-git`,
+      };
       params.push(
         { name: "revision", value: branch },
         { name: "url", value: gitUrl }
@@ -330,30 +507,99 @@ module.exports = {
 
     return {
       apiVersion: "tekton.dev/v1alpha1",
-      kind: "PipelineResources",
-      metadata: {
-        name: resourceName,
-      },
+      kind: "PipelineResource",
+      metadata,
       spec: {
         type,
         params,
       },
     };
   },
-  pipelineRun(resourceName) {
+  pipeline() {
+    const pipeline = {
+      apiVersion: "tekton.dev/v1beta1",
+      kind: "Pipeline",
+      metadata: {
+        name: "image-pipeline",
+      },
+      spec: {
+        resources: [
+          {
+            name: "image-link",
+            type: "image",
+          },
+          {
+            name: "repo-link",
+            type: "git",
+          },
+        ],
+        tasks: [
+          {
+            name: "buildpacks-v3-alpha",
+            taskRef: {
+              name: "buildpacks-v3-alpha",
+            },
+            params: [
+              {
+                name: "BUILDER_IMAGE",
+                value: "gcr.io/buildpacks/builder:v1",
+              },
+            ],
+            resources: {
+              inputs: [
+                {
+                  name: "source",
+                  resource: "repo-link",
+                },
+              ],
+              outputs: [
+                {
+                  name: "image",
+                  resource: "image-link",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const pipelinePvc = {
+      apiVersion: "v1",
+      kind: "PersistentVolumeClaim",
+      metadata: {
+        name: "buildpacks-cache-pvc",
+      },
+      spec: {
+        accessModes: ["ReadWriteOnce"],
+        resources: {
+          requests: {
+            storage: "500Mi",
+          },
+        },
+      },
+    };
+    return { pipeline, pipelinePvc };
+  },
+  pipelineRun(values) {
     return {
       apiVersion: "tekton.dev/v1beta1",
       kind: "PipelineRun",
-      metadata: { name: resourceName },
+      metadata: {
+        name: values.name,
+        ...(values.namespace && { namespace: values.namespace }),
+      },
       spec: {
-        ServiceAccountName: "image-build-push-sa",
+        ServiceAccountName: values.sa,
         pipelineRef: { name: "image-pipeline" },
         resources: [
           {
             name: "image-link",
-            resourceRef: { name: resourceName },
+            resourceRef: { name: `${values.registryResource}-image` },
           },
-          { name: "repo-link", resourceRef: { name: resourceName } },
+          {
+            name: "repo-link",
+            resourceRef: { name: `${values.gitResource}-git` },
+          },
         ],
         podTemplate: {
           volumes: [
