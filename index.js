@@ -514,7 +514,7 @@ create
     const imageBuilderManifest = resourceGenerator.pipelineRun(values);
     loadKubernetesResourceDefault(imageBuilderManifest)
       .then((res) =>
-        console.log(tableGenerator.pipelineResourceSuccessTable(res.body))
+        console.log(tableGenerator.pipelineRunSuccessTable(res.body))
       )
       .catch((err) => console.log(tableGenerator.errTable(err.body)));
   })
