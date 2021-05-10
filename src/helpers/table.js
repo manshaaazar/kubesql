@@ -1,5 +1,4 @@
 const cliTable = require("cli-table");
-const { method } = require("lodash");
 const generateTable = (value) => {
   const table = require("prettytable");
   if (value.managedFields) {
@@ -267,6 +266,42 @@ module.exports = {
       chars: { left: "", right: "", top: "", bottom: "" },
     });
     rootLevel.push({ root: rootTable }, { metadata: metadataTable });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  deleteSuccessTable({ apiVersion, kind, status }) {
+    const statusTable = generateTable(status);
+    const rootTable = generateTable({ kind, apiVersion, status: "Success" });
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable }, { status: statusTable });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  deleteErrTable({
+    kind,
+    apiVersion,
+    message,
+    code,
+    metadata,
+    reason,
+    status,
+  }) {
+    const rootTable = generateTable({
+      kind,
+      apiVersion,
+      message,
+      code,
+      reason,
+      status,
+    });
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable });
     const finalTable = rootLevel.toString();
     return finalTable;
   },

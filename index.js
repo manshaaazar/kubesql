@@ -6,6 +6,7 @@ const resourceGenerator = require("./src/helpers/resourceObject");
 const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
 const tableGenerator = require("./src/helpers/table");
 const _ = require("lodash");
+const deleteComHandler = require("./src/helpers/delete");
 cli.version("1.0.0").description("kubernetes strucuted query language");
 const create = cli
   .command("create")
@@ -32,12 +33,15 @@ const create = cli
   );
 // create namesapce command
 create
-  .command("namespace <name> ")
+  .command("namespace <keys> ")
   .alias("n")
   .description("create a namespace")
-  .action((name) => {
+  .action((keys) => {
+    let parsedQuery = queryParser.parse(keys);
+    console.log("parsedQuery", parsedQuery);
+    parsedQuery = parsedQuery[0].split(" ");
     const values = {
-      name,
+      name: parsedQuery[1],
     };
     const namespaceManifest = resourceGenerator.namespace(values);
     loadKubernetesResourceDefault(namespaceManifest)
@@ -525,5 +529,17 @@ create
     $ create a imageBuilder | iBuilder <imageBuilderName> '(namespace default,sa serviceAccountName,gitResources resourceName,registryResource resourceName)'
   `
   );
-
+cli
+  .command("delete <from> <namespace> <where> <resource> <and> <resourceName>")
+  .description("delete any kubernetes object resource ")
+  .action((from, namespace, where, resouce, and, resourName) => {
+    deleteComHandler.delete(namespace, resouce, resourName);
+  })
+  .addHelpText(
+    "after",
+    `
+Example:
+  $ delete from denouement where resource=service and name=den-service
+`
+  );
 cli.parse(process.argv);

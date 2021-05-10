@@ -28,6 +28,7 @@
     "cli-table": "^0.3.6",
     "commander": "^7.2.0",
     "lodash": "^4.17.21",
-    "prettytable": "^0.3.1"
+    "prettytable": "^0.3.1",
+    "sqlite-parser": "^1.0.1"
   }
 }
