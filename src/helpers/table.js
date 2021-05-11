@@ -84,10 +84,6 @@ module.exports = {
     const metadataTable = generateTable(metadata);
     const selectorTable = generateTable(selector);
     const rootTable = generateTable({ kind, apiVersion });
-    console.log("spec", specTable);
-    console.log("meta", metadataTable);
-    console.log("root", rootTable);
-    console.log("portsTable", portsTable);
 
     const rootLevel = new cliTable({
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
@@ -270,13 +266,12 @@ module.exports = {
     return finalTable;
   },
   deleteSuccessTable({ apiVersion, kind, status }) {
-    const statusTable = generateTable(status);
     const rootTable = generateTable({ kind, apiVersion, status: "Success" });
     const rootLevel = new cliTable({
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
       chars: { left: "", right: "", top: "", bottom: "" },
     });
-    rootLevel.push({ root: rootTable }, { status: statusTable });
+    rootLevel.push({ root: rootTable });
     const finalTable = rootLevel.toString();
     return finalTable;
   },

@@ -532,8 +532,8 @@ create
 cli
   .command("delete <from> <namespace> <where> <resource> <and> <resourceName>")
   .description("delete any kubernetes object resource ")
-  .action((from, namespace, where, resouce, and, resourName) => {
-    deleteComHandler.delete(namespace, resouce, resourName);
+  .action((from, namespace, where, resource, and, resourName) => {
+    deleteComHandler.delete(namespace, resource, resourName);
   })
   .addHelpText(
     "after",
