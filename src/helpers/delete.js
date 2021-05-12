@@ -4,7 +4,7 @@ const _ = require("lodash");
 module.exports = {
   delete(namespace, resource, resourceName) {
     resource = resource.split("=");
-    resource = _.capitalize(resource[1]);
+    resource = resource[1];
     resourceName = resourceName.split("=");
     if (resource === "Role" || resource === "RoleBinding") {
       const object = {
@@ -42,12 +42,12 @@ module.exports = {
       deleteKubernetesResourceDefault(object)
         .then((res) => tableGenerator.deleteSuccessTable(res.body))
         .catch((err) => tableGenerator.deleteErrTable(err.body));
-    } else if (resource === "iConfig") {
+    } else if (resource === "iConfig" || resource === "imageConfig") {
       const gitResource = {
         apiVersion: "tekton.dev/v1alpha1",
         kind: "PipelineResource",
         metadata: {
-          name: `${resourceName}-git`,
+          name: `${resourceName[1]}-git`,
           namespace: namespace,
         },
       };
@@ -55,7 +55,7 @@ module.exports = {
         apiVersion: "tekton.dev/v1alpha1",
         kind: "PipelineResource",
         metadata: {
-          name: `${resourceName}-image`,
+          name: `${resourceName[1]}-image`,
           namespace: namespace,
         },
       };
@@ -65,12 +65,25 @@ module.exports = {
       deleteKubernetesResourceDefault(ImageResource)
         .then((res) => tableGenerator.deleteSuccessTable(res.body))
         .catch((err) => tableGenerator.deleteErrTable(err.body));
+    } else if (resource === "iBuilder" || resource === "imageBuilder") {
+      const object = {
+        apiVersion: "tekton.dev/v1beta1",
+        kind: "PipelineRun",
+        metadata: {
+          name: resourceName[1],
+        },
+      };
+      console.log("Object", object);
+      deleteKubernetesResourceDefault(object)
+        .then((res) => console.log(tableGenerator.deleteSuccessTable(res.body)))
+        .catch((err) => console.log(tableGenerator.deleteErrTable(err.body)));
     } else {
       const object = {
         apiVersion: "v1",
         kind: resource,
         metadata: { name: resourceName[1], namespace: namespace },
       };
+      console.log("Object", object);
       deleteKubernetesResourceDefault(object)
         .then((res) => console.log(tableGenerator.deleteSuccessTable(res.body)))
         .catch((err) => console.log(tableGenerator.deleteErrTable(err.body)));
