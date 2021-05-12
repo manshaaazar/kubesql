@@ -73,7 +73,7 @@ module.exports = {
     const finalTable = rootLevel.toString();
     return finalTable;
   },
-  serviceSuccessTable({ kind, apiVersion, metadata, spec, status }) {
+  serviceSuccessTable({ kind, apiVersion, metadata, spec }) {
     const { clusterIP, type, sessionAffinity, ports, selector } = spec;
     const specTable = generateTable({
       clusterIP,
@@ -297,6 +297,73 @@ module.exports = {
       chars: { left: "", right: "", top: "", bottom: "" },
     });
     rootLevel.push({ root: rootTable });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  listResource(items) {
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    items.forEach((resource) => {
+      const { name, namespace } = resource.metadata;
+      const metadataTable = generateTable({ name, namespace });
+      rootLevel.push({ metadata: metadataTable });
+    });
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  podTable({ kind, apiVersion, metadata, spec, status }) {
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    const { name, namespace, uid } = metadata;
+    const { restartPolicy, serviceAccount, nodeName } = spec;
+    const { phase, podIP, qosClass, containerStatuses } = status;
+    const metadataTable = generateTable({ name, namespace, uid });
+    const specTable = generateTable({
+      restartPolicy,
+      serviceAccount: serviceAccount ?? "",
+      nodeName,
+    });
+    const statusTable = generateTable({ phase, podIP, qosClass });
+    const rootTable = generateTable({
+      kind,
+      apiVersion,
+    });
+    rootLevel.push(
+      { root: rootTable },
+      { metadata: metadataTable },
+      { spec: specTable },
+      { status: statusTable }
+    );
+    containerStatuses.map((container) => {
+      const { name, state, started } = container;
+      const containerTable = generateTable({
+        name,
+        started,
+      });
+      rootLevel.push({ container: containerTable });
+    });
+
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  logsTable({ kind, apiVersion, status, message, reason, code }) {
+    const rootTable = generateTable({
+      kind,
+      apiVersion,
+      status,
+      reason,
+      code,
+    });
+    const logsTable = generateTable({ message });
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push({ root: rootTable }, { logs: logsTable });
     const finalTable = rootLevel.toString();
     return finalTable;
   },

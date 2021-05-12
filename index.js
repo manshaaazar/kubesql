@@ -7,6 +7,7 @@ const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
 const tableGenerator = require("./src/helpers/table");
 const _ = require("lodash");
 const deleteComHandler = require("./src/helpers/delete");
+const { getResource } = require("./src/helpers/get");
 cli.version("1.0.0").description("kubernetes strucuted query language");
 const create = cli
   .command("create")
@@ -542,4 +543,14 @@ Example:
   $ delete from denouement where resource=service and name=den-service
 `
   );
+cli
+  .command("select <resources>  <from> <namespace> <where> <resource>")
+  .description("read any kubernetes object resource")
+  .action((resources, from, namespace, where, resource) => {
+    const resourceList = resources.split(",");
+    let resourceName = resource.split("=");
+    resourceName = resourceName[1];
+    getResource(resourceList, namespace, resourceName);
+  });
+
 cli.parse(process.argv);
