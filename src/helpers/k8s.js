@@ -6,6 +6,7 @@ const kubernetesApi = kubernetesConfig.makeApiClient(
   kubernetes.KubernetesObjectApi
 );
 const kubeCoreV1API = kubernetesConfig.makeApiClient(kubernetes.CoreV1Api);
+const kubeAppsV1API = kubernetesConfig.makeApiClient(kubernetes.AppsV1Api);
 module.exports = {
   loadKubernetesResourceDefault(object) {
     return new Promise((resolve, reject) => {
@@ -68,9 +69,14 @@ module.exports = {
           .listPersistentVolume()
           .then((res) => resolve(res))
           .catch((err) => reject(err));
-      } else if (resourceName === "Event") {
+      } else if (resourceName === "event") {
         kubeCoreV1API
           .listNamespacedEvent(namespace)
+          .then((res) => resolve(res))
+          .catch((err) => reject(err));
+      } else if (resourceName === "deployment") {
+        kubeAppsV1API
+          .listNamespacedDeployment(namespace)
           .then((res) => resolve(res))
           .catch((err) => reject(err));
       }
@@ -81,6 +87,14 @@ module.exports = {
       kubernetesApi
         .read(object)
         .then((response) => resolve(response))
+        .catch((err) => reject(err));
+    });
+  },
+  updateKubernetesResourceDefault(object) {
+    return new Promise((resolve, reject) => {
+      kubernetesApi
+        .patch(object)
+        .then((res) => resolve(res))
         .catch((err) => reject(err));
     });
   },

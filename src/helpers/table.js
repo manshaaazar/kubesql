@@ -40,7 +40,6 @@ module.exports = {
     return finalTable;
   },
   errTable({ kind, apiVersion, status, message, reason, details, code }) {
-    const detailsTable = generateTable(details);
     const rootTable = generateTable({
       kind,
       apiVersion,
@@ -53,7 +52,7 @@ module.exports = {
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
       chars: { left: "", right: "", top: "", bottom: "" },
     });
-    rootLevel.push({ root: rootTable }, { details: detailsTable });
+    rootLevel.push({ root: rootTable });
     const finalTable = rootLevel.toString();
     return finalTable;
   },
@@ -226,8 +225,13 @@ module.exports = {
     return finalTable;
   },
   deploymentSuccessTable({ kind, apiVersion, metadata, spec }) {
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
     const rootTable = generateTable({ kind, apiVersion, status: "Success" });
-    const metadataTable = generateTable(metadata);
+    const { namespace, name } = metadata || {};
+    const metadataTable = generateTable({ namespace, name });
     const labelsTable = generateTable(metadata.labels);
     const {
       revisionHistoryLimit,
@@ -235,7 +239,12 @@ module.exports = {
       replicas,
       selector,
       strategy,
+      template,
     } = spec;
+    const { metadata: podMetadata, spec: podSpec } = template || {};
+    const podMetadataTable = generateTable({
+      name: podMetadata.name,
+    });
     const specTable = generateTable({
       revisionHistoryLimit,
       progressDeadlineSeconds,
@@ -244,18 +253,25 @@ module.exports = {
     const selectorTable = generateTable(selector.matchLabels);
     const { type } = strategy;
     const starategyTable = generateTable({ type });
-    const rootLevel = new cliTable({
-      style: { compact: true, "padding-right": 0, "padding-left": 0 },
-      chars: { left: "", right: "", top: "", bottom: "" },
-    });
+
     rootLevel.push(
       { root: rootTable },
       { metadata: metadataTable },
       { labels: labelsTable },
       { spec: specTable },
       { selector: selectorTable },
-      { strategy: starategyTable }
+      { strategy: starategyTable },
+      { podMetadata: podMetadataTable }
     );
+    console.log("podSpec", podSpec);
+    podSpec.containers.forEach((container) => {
+      const { name, ports } = container || {};
+      const containerTable = generateTable({
+        name,
+        ports: JSON.stringify(ports),
+      });
+      rootLevel.push({ container: containerTable });
+    });
     const finalTable = rootLevel.toString();
     return finalTable;
   },
@@ -351,7 +367,6 @@ module.exports = {
       });
       rootLevel.push({ metadata: metadataTable });
     });
-    console.log("finalT", rootLevel);
     const finalTable = rootLevel.toString();
     return finalTable;
   },
@@ -360,9 +375,9 @@ module.exports = {
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
       chars: { left: "", right: "", top: "", bottom: "" },
     });
-    const { name, namespace, uid } = metadata;
-    const { restartPolicy, serviceAccount, nodeName } = spec;
-    const { phase, podIP, qosClass, containerStatuses } = status;
+    const { name, namespace, uid } = metadata || {};
+    const { restartPolicy, serviceAccount, nodeName } = spec || {};
+    const { phase, podIP, qosClass, containerStatuses } = status || {};
     const metadataTable = generateTable({ name, namespace, uid });
     const specTable = generateTable({
       restartPolicy,
