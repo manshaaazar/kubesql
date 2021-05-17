@@ -27,7 +27,7 @@ module.exports = {
         .catch((err) => console.log(err));
     } else {
       resourceList.forEach((resource) => {
-        if (resourceName === "Role") {
+        if (resourceName === "role") {
           const object = {
             apiVersion: "rbac.authorization.k8s.io/v1",
             kind: resourceName,
@@ -38,7 +38,7 @@ module.exports = {
               console.log(tableGenerator.roleSuccessTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "ClusterRoleBinding") {
+        } else if (resourceName === "clusterrolebinding") {
           const object = {
             apiVersion: "rbac.authorization.k8s.io/v1",
             kind: resourceName,
@@ -49,7 +49,7 @@ module.exports = {
               console.log(tableGenerator.roleBindingSuccessTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "Deployment") {
+        } else if (resourceName === "deployment") {
           const object = {
             apiVersion: "apps/v1",
             kind: resourceName,
@@ -60,7 +60,7 @@ module.exports = {
               console.log(tableGenerator.deploymentSuccessTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "Namespace") {
+        } else if (resourceName === "namespace") {
           const object = {
             apiVersion: "v1",
             kind: resourceName,
@@ -70,8 +70,8 @@ module.exports = {
             .then((res) => console.log(tableGenerator.successTable(res.body)))
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
         } else if (
-          resourceName === "iConfig" ||
-          resourceName === "imageConfig"
+          resourceName === "iconfig" ||
+          resourceName === "imageconfig"
         ) {
           const gitResource = {
             apiVersion: "tekton.dev/v1alpha1",
@@ -100,8 +100,8 @@ module.exports = {
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
         } else if (
-          resourceName === "iBuilder" ||
-          resourceName === "imageBuilder"
+          resourceName === "ibuilder" ||
+          resourceName === "imagebuilder"
         ) {
           const object = {
             apiVersion: "tekton.dev/v1beta1",
@@ -115,10 +115,10 @@ module.exports = {
               console.log(tableGenerator.pipelineResourceSuccessTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "Service") {
+        } else if (resourceName === "service") {
           const object = {
             apiVersion: "v1",
-            kind: resourceName,
+            kind: "Service",
             metadata: { name: resource, namespace: namespace },
           };
           console.log("object", object);
@@ -127,17 +127,23 @@ module.exports = {
               console.log(tableGenerator.serviceSuccessTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "ServiceAccount") {
+        } else if (resourceName === "serviceaccount") {
           const object = {
             apiVersion: "v1",
-            kind: resourceName,
+            kind: "ServiceAccount",
             metadata: { name: resource, namespace: namespace },
           };
 
           getKubernetesResourceDefault(object)
-            .then((res) => console.log(tableGenerator.saSuccessTable(res.body)))
-            .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "Secret") {
+            .then((res) => {
+              console.log(res.body);
+              console.log(tableGenerator.saSuccessTable(res.body));
+            })
+            .catch((err) => {
+              console.log(err);
+              console.log(tableGenerator.errTable(err.body));
+            });
+        } else if (resourceName === "secret") {
           const object = {
             apiVersion: "v1",
             kind: resourceName,
@@ -148,7 +154,7 @@ module.exports = {
               console.log(tableGenerator.secretSuccessTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "ClusterRole") {
+        } else if (resourceName === "clusterrole") {
           const object = {
             apiVersion: "v1",
             kind: resourceName,
@@ -160,7 +166,7 @@ module.exports = {
               console.log(tableGenerator.roleSuccessTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "RoleBinding") {
+        } else if (resourceName === "rolebinding") {
           const object = {
             apiVersion: "v1",
             kind: resourceName,
@@ -173,7 +179,7 @@ module.exports = {
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
         } else if (
-          resourceName === "PersistentVolumeClaim" ||
+          resourceName === "persistentvolumeclaim" ||
           resourceName === "pvc"
         ) {
           const object = {
@@ -182,25 +188,33 @@ module.exports = {
             metadata: { name: resource, namespace: namespace },
           };
           getKubernetesResourceDefault(object)
-            .then((res) =>
-              console.log(tableGenerator.pvcSuccessTable(res.body))
-            )
-            .catch((err) => console.log(tableGenerator.errTable(err.body)));
+            .then((res) => {
+              console.log("res", res);
+              console.log(tableGenerator.pvcTable(res.body));
+            })
+            .catch((err) => {
+              console.log("err", err);
+              console.log(tableGenerator.errTable(err.body));
+            });
         } else if (
-          (resourceName === "pv", resourceName === "PersistentVolume")
+          resourceName === "pv" ||
+          resourceName === "persistentvolume"
         ) {
           const object = {
             apiVersion: "v1",
-            kind: resourceName,
+            kind: "PersistentVolume",
             metadata: { name: resource, namespace: namespace },
           };
-
           getKubernetesResourceDefault(object)
-            .then((res) =>
-              console.log(tableGenerator.pvcSuccessTable(res.body))
-            )
-            .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "ResourceQuota") {
+            .then((res) => {
+              //console.log("res", res);
+              console.log(tableGenerator.pvTable(res.body));
+            })
+            .catch((err) => {
+              console.log("err", err);
+              //   console.log(tableGenerator.errTable(err.body));
+            });
+        } else if (resourceName === "resourcequota") {
           const object = {
             apiVersion: "v1",
             kind: "ResourceQuota",
@@ -212,7 +226,7 @@ module.exports = {
               console.log(tableGenerator.resourceQuotaTable(res.body))
             )
             .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceName === "Pod") {
+        } else if (resourceName === "pod") {
           const object = {
             apiVersion: "v1",
             kind: "Pod",
@@ -226,7 +240,7 @@ module.exports = {
             .catch((err) => {
               console.log(tableGenerator.errTable(err.body));
             });
-        } else if (resourceName === "PodLogs") {
+        } else if (resourceName === "podlogs") {
           getPodLogs(resource, namespace)
             .then((res) => console.log(tableGenerator.successTable(res.body)))
             .catch((err) => console.log(tableGenerator.logsTable(err.body)));
