@@ -25,45 +25,45 @@ module.exports = {
   },
   listResources(resourceName, namespace) {
     return new Promise((resolve, reject) => {
-      if (resourceName === "Namespace") {
+      if (resourceName === "namespace") {
         kubeCoreV1API
           .listNamespace("Namespace")
           .then((res) => resolve(res))
           .catch((err) => reject(err));
-      } else if (resourceName === "Secret") {
+      } else if (resourceName === "secret") {
         kubeCoreV1API
           .listNamespacedSecret(namespace)
           .then((res) => resolve(res))
           .catch((err) => reject(err));
-      } else if (resourceName === "Service") {
+      } else if (resourceName === "service") {
         kubeCoreV1API
           .listNamespacedService(namespace)
           .then((res) => resolve(res))
           .catch((err) => reject(err));
-      } else if (resourceName === "ServiceAccount") {
+      } else if (resourceName === "serviceaccount") {
         kubeCoreV1API
           .listNamespacedServiceAccount(namespace)
           .then((res) => resolve(res))
           .catch((err) => reject(err));
-      } else if (resourceName === "ResourceQuota") {
+      } else if (resourceName === "resourcequota") {
         kubeCoreV1API
           .listNamespacedResourceQuota(namespace)
           .then((res) => resolve(res))
           .catch((err) => reject(err));
       } else if (
-        resourceName === "PersistentVolumeClaim" ||
+        resourceName === "persistentvolumeclaim" ||
         resourceName === "pvc"
       ) {
         kubeCoreV1API
           .listNamespacedPersistentVolumeClaim(namespace)
           .then((res) => resolve(res))
           .catch((err) => reject(err));
-      } else if (resourceName === "Pod") {
+      } else if (resourceName === "pod") {
         kubeCoreV1API
           .listNamespacedPod(namespace)
           .then((res) => resolve(res))
           .catch((err) => reject(err));
-      } else if (resourceName == "PersistentVolume" || resourceName === "pv") {
+      } else if (resourceName == "persistentvolume" || resourceName === "pv") {
         kubeCoreV1API
           .listPersistentVolume()
           .then((res) => resolve(res))

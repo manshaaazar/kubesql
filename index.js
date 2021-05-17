@@ -7,6 +7,8 @@ const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
 const tableGenerator = require("./src/helpers/table");
 const _ = require("lodash");
 const deleteComHandler = require("./src/helpers/delete");
+const sqlParser = require("sqlite-parser");
+const { parse } = require("commander");
 const { getResource } = require("./src/helpers/get");
 cli.version("1.0.0").description("kubernetes strucuted query language");
 const create = cli
@@ -544,13 +546,46 @@ Example:
 `
   );
 cli
-  .command("select <resources>  <from> <namespace> <where> <resource>")
+  .arguments("<query>")
+  .option("-q", "sql query")
   .description("read any kubernetes object resource")
-  .action((resources, from, namespace, where, resource) => {
-    const resourceList = resources.split(",");
-    let resourceName = resource.split("=");
-    resourceName = resourceName[1];
+  .action(async (query) => {
+    const options = cli.opts();
+    if (options.q) {
+      const parsedQuery = sqlParser(query);
+      const { result, from, where } = parsedQuery.statement[0];
+      let resourceList = [];
+      console.log("resource", result);
+      resourceList = result.map((resource) => {
+        if (resource.variant === "text") {
+          return resource.value;
+        } else {
+          return resource.name;
+        }
+      });
+      const { name: namespace } = from;
+      const { operation } = where[0];
+      if (operation === "=") {
+        const { right: resourceName } = where[0];
+        let { name } = resourceName;
+        console.log("name", name);
+        console.log("resourceLsit", resourceList);
+        console.log("namespace", namespace);
+        getResource(resourceList, namespace, name);
+      } else if (operation === "and") {
+        const { left, right } = where[0];
+        console.log("where", where[0]);
+      }
+    }
+    /*
     getResource(resourceList, namespace, resourceName);
-  });
-
-cli.parse(process.argv);
+    */
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ kubesql -q  "select secret1,secret2 where resource=Secret"
+  `
+  );
+cli.parseAsync(process.argv);

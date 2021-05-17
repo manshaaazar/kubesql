@@ -103,7 +103,7 @@ module.exports = {
     console.log("status", status);
     const { phase } = status;
     const { selector, resources, storageClassName, volumeMode } = spec;
-    const selectorTable = generateTable(selector.matchLabels);
+
     const resourceTable = generateTable(resources.requests);
     const specTable = generateTable({ storageClassName, volumeMode });
     const rootTable = generateTable({
@@ -121,8 +121,46 @@ module.exports = {
       { root: rootTable },
       { spec: specTable },
       { resource: resourceTable },
-      { selector: selectorTable },
+
       { metadata: metadataTable }
+    );
+    const finalTable = rootLevel.toString();
+    return finalTable;
+  },
+  pvTable({ kind, apiVersion, metadata, spec, status }) {
+    const metadataTable = generateTable(metadata);
+    const {
+      claimRef,
+      accessModes,
+      capacity,
+      hostPath,
+      persistentVolumeReclaimPolicy,
+      storageClassName,
+      volumeMode,
+    } = spec;
+    const rootTable = generateTable({
+      kind,
+      apiVersion,
+      volumeMode,
+      persistentVolumeReclaimPolicy:
+        persistentVolumeReclaimPolicy ?? "undefined",
+      status: status?.phase,
+      storageClassName: storageClassName ?? "undefined",
+    });
+    console.log("accessModes", accessModes);
+    const capacityTable = generateTable(capacity);
+    const hostTable = generateTable(hostPath);
+    const claimRefTable = generateTable(claimRef);
+    const rootLevel = new cliTable({
+      style: { compact: true, "padding-right": 0, "padding-left": 0 },
+      chars: { left: "", right: "", top: "", bottom: "" },
+    });
+    rootLevel.push(
+      { root: rootTable },
+      { metadata: metadataTable },
+      { capacity: capacityTable },
+      { hostPath: hostTable },
+      { claimRef: claimRefTable }
     );
     const finalTable = rootLevel.toString();
     return finalTable;
@@ -307,9 +345,13 @@ module.exports = {
     });
     items.forEach((resource) => {
       const { name, namespace } = resource.metadata;
-      const metadataTable = generateTable({ name, namespace });
+      const metadataTable = generateTable({
+        name,
+        namespace: namespace ?? "Global",
+      });
       rootLevel.push({ metadata: metadataTable });
     });
+    console.log("finalT", rootLevel);
     const finalTable = rootLevel.toString();
     return finalTable;
   },
