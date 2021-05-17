@@ -19,7 +19,7 @@ module.exports = {
         ...(values.namespace && { namespace: values.namespace }),
         ...(values.annotations && { annotations: values.annotations }),
       },
-      type: values.type,
+      ...(values.type && { type: values.type }),
       stringData: values.data,
     };
   },
@@ -32,12 +32,11 @@ module.exports = {
         ...(values.namespace && { namespace: values.namespace }),
       },
       spec: {
-        type: values.type,
-        selector: {
-          app: values.app,
-        },
+        ...(values.type && { type: values.type }),
+        ...(values.app && { selector: { app: values.app } }),
         ports: [
           {
+            ...(values.portname && { name: values.portname }),
             port: parseInt(values.port),
             targetPort: parseInt(values.port),
           },
@@ -218,7 +217,7 @@ module.exports = {
     return {
       apiVersion: "apps/v1",
       kind: "Deployment",
-      namespace: values.namespace,
+      ...(values.namespace && { namespace: values.namespace }),
       metadata: {
         name: values.name,
         ...(values.namespace && { namespace: values.namespace }),
@@ -267,9 +266,11 @@ module.exports = {
                 ...(values.volumePaths && {
                   volumeMounts: values.volumePaths,
                 }),
-                ports: [{ containerPort: parseInt(values.port) }],
-                ...(values.envs && {
-                  envFrom: [{ secretRef: { name: values.secret } }],
+                ...(values.port && {
+                  ports: [{ containerPort: parseInt(values.port) }],
+                }),
+                ...(values.env && {
+                  envFrom: [{ secretRef: { name: values.env } }],
                 }),
               },
             ],

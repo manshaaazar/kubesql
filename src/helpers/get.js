@@ -10,7 +10,6 @@ module.exports = {
     if (resourceList[0] === "*") {
       listResources(resourceName, namespace)
         .then((res) => {
-          console.log("res", res.body);
           const resources =
             res.body.items.length === 0
               ? [
@@ -24,13 +23,13 @@ module.exports = {
               : res.body.items;
           console.log(tableGenerator.listResource(resources));
         })
-        .catch((err) => console.log(err));
+        .catch((err) => console.log(err.body));
     } else {
       resourceList.forEach((resource) => {
         if (resourceName === "role") {
           const object = {
             apiVersion: "rbac.authorization.k8s.io/v1",
-            kind: resourceName,
+            kind: "Role",
             metadata: { name: resource, namespace: namespace },
           };
           getKubernetesResourceDefault(object)
@@ -41,7 +40,7 @@ module.exports = {
         } else if (resourceName === "clusterrolebinding") {
           const object = {
             apiVersion: "rbac.authorization.k8s.io/v1",
-            kind: resourceName,
+            kind: "ClusterRoleBinding",
             metadata: { name: resource },
           };
           getKubernetesResourceDefault(object)
@@ -52,18 +51,21 @@ module.exports = {
         } else if (resourceName === "deployment") {
           const object = {
             apiVersion: "apps/v1",
-            kind: resourceName,
+            kind: "Deployment",
             metadata: { name: resource, namespace: namespace },
           };
           getKubernetesResourceDefault(object)
-            .then((res) =>
-              console.log(tableGenerator.deploymentSuccessTable(res.body))
-            )
-            .catch((err) => console.log(tableGenerator.errTable(err.body)));
+            .then((res) => {
+              console.log("res", res.body);
+              console.log(tableGenerator.deploymentSuccessTable(res.body));
+            })
+            .catch((err) => {
+              console.log(tableGenerator.errTable(err.body));
+            });
         } else if (resourceName === "namespace") {
           const object = {
             apiVersion: "v1",
-            kind: resourceName,
+            kind: "Namespace",
             metadata: { name: resource },
           };
           getKubernetesResourceDefault(object)
@@ -146,7 +148,7 @@ module.exports = {
         } else if (resourceName === "secret") {
           const object = {
             apiVersion: "v1",
-            kind: resourceName,
+            kind: "Secret",
             metadata: { name: resource, namespace: namespace },
           };
           getKubernetesResourceDefault(object)
@@ -157,7 +159,7 @@ module.exports = {
         } else if (resourceName === "clusterrole") {
           const object = {
             apiVersion: "v1",
-            kind: resourceName,
+            kind: "ClusterRole",
             metadata: { name: resource, namespace: namespace },
           };
           console.log("object", object);
@@ -169,7 +171,7 @@ module.exports = {
         } else if (resourceName === "rolebinding") {
           const object = {
             apiVersion: "v1",
-            kind: resourceName,
+            kind: "RoleBinding",
             metadata: { name: resource, namespace: namespace },
           };
 
