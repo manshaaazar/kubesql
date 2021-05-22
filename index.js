@@ -23,6 +23,7 @@ const create = cli
     $ create namespace                      | n 
     $ create secret                         | sec
     $ create service                        | ser
+    $ create serviceAccount                 | sa
     $ create persistentVolume               | pv
     $ create persistentVolumeClaim          | pvc 
     $ create rsourceQuota                   | rq
@@ -590,6 +591,7 @@ cli
         if (resourceType === "secret") {
           console.log("resourceName", resourceName);
           console.log("resourceType", resourceType);
+          console.log("where",where);
           const values = {
             name: resourceName,
             data: {},
