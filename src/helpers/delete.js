@@ -31,8 +31,8 @@ module.exports = {
         metadata: { name: resourceName[1], namespace: namespace },
       };
       deleteKubernetesResourceDefault(object)
-        .then((res) => tableGenerator.deleteSuccessTable(res.body))
-        .catch((err) => tableGenerator.deleteErrTable(err.body));
+        .then((res) => console.log(tableGenerator.deleteSuccessTable(res.body)))
+        .catch((err) => console.log(tableGenerator.deleteErrTable(err.body)));
     } else if (resource === "Namespace") {
       const object = {
         apiVersion: "v1",

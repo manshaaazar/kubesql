@@ -3,10 +3,14 @@
 const cli = require("commander");
 const queryParser = require("./src/helpers/commandParser");
 const resourceGenerator = require("./src/helpers/resourceObject");
-const { loadKubernetesResourceDefault } = require("./src/helpers/k8s");
+const {
+  loadKubernetesResourceDefault,
+  updateKubernetesResourceDefault,
+} = require("./src/helpers/k8s");
 const tableGenerator = require("./src/helpers/table");
 const _ = require("lodash");
 const deleteComHandler = require("./src/helpers/delete");
+const sqlParser = require("sqlite-parser");
 const { getResource } = require("./src/helpers/get");
 cli.version("1.0.0").description("kubernetes strucuted query language");
 const create = cli
@@ -106,7 +110,7 @@ create
     "after",
     `
   Example: 
-    $ secret <secretName> "(namespace default,secret value,secret value, ...)"
+    $ secret <secretName> "(namespace default,username value,password value, ...)"
   `
   );
 create
@@ -393,6 +397,7 @@ create
       }
     });
     const deploymentManifest = resourceGenerator.deployment(values);
+    console.log("deploymentManifest", deploymentManifest);
     loadKubernetesResourceDefault(deploymentManifest)
       .then((res) =>
         console.log(tableGenerator.deploymentSuccessTable(res.body))
@@ -460,7 +465,8 @@ create
       gitUrl,
       branch,
     });
-    const imageBuildPushTaskManifest = resourceGenerator.imageBuildPushTaskResource();
+    const imageBuildPushTaskManifest =
+      resourceGenerator.imageBuildPushTaskResource();
     const { pipeline, pipelinePvc } = resourceGenerator.pipeline();
     // load tekton pipeline
     // load tekton image build push task
@@ -544,13 +550,105 @@ Example:
 `
   );
 cli
-  .command("select <resources>  <from> <namespace> <where> <resource>")
+  .arguments("<query>")
+  .option("-q", "sql query")
   .description("read any kubernetes object resource")
-  .action((resources, from, namespace, where, resource) => {
-    const resourceList = resources.split(",");
-    let resourceName = resource.split("=");
-    resourceName = resourceName[1];
+  .action(async (query) => {
+    const options = cli.opts();
+    if (options.q) {
+      const parsedQuery = await sqlParser(query);
+      const { statement } = parsedQuery;
+      if (statement[0].variant === "select") {
+        // select query logic goes here
+        const { result, from, where } = parsedQuery.statement[0];
+        let resourceList = [];
+        resourceList = result.map((resource) => {
+          if (resource.variant === "text") {
+            return resource.value;
+          } else {
+            return resource.name;
+          }
+        });
+        const { name: namespace } = from;
+        const { operation } = where[0];
+        if (operation === "=") {
+          const { right: resourceName } = where[0];
+          let { name } = resourceName;
+          console.log("name", name);
+          console.log("resourceLsit", resourceList);
+          console.log("namespace", namespace);
+          getResource(resourceList, namespace, name);
+        } else if (operation === "and") {
+          const { left, right } = where[0];
+          console.log("where", where[0]);
+        }
+      } else if (statement[0].variant === "update") {
+        // update query logic goes here
+        const { into, set, where } = statement[0];
+        const { name: resourceName } = into;
+        const { name: resourceType } = where[0].right;
+        if (resourceType === "secret") {
+          console.log("resourceName", resourceName);
+          console.log("resourceType", resourceType);
+          const values = {
+            name: resourceName,
+            data: {},
+          };
+          set.forEach((obj) => {
+            values.data[`${obj.target.name}`] = obj.value.value;
+          });
+          console.log("values", values);
+          const object = resourceGenerator.secret(values);
+          console.log("object", object);
+          updateKubernetesResourceDefault(object)
+            .then((res) =>
+              console.log(tableGenerator.secretSuccessTable(res.body))
+            )
+            .catch((err) => console.log(tableGenerator.errTable(err.body)));
+        } else if (resourceType === "service") {
+          const values = {
+            name: resourceName,
+          };
+          set.forEach((obj) => {
+            values[`${obj.target.name}`] = obj.value.value;
+          });
+          const object = resourceGenerator.service(values);
+          console.log("object", object);
+          updateKubernetesResourceDefault(object)
+            .then((res) =>
+              console.log(tableGenerator.serviceSuccessTable(res.body))
+            )
+            .catch((err) => console.log(tableGenerator.errTable(err.body)));
+        } else if (resourceType === "deployment") {
+          const values = {
+            name: resourceName,
+          };
+          set.forEach((obj) => {
+            values[`${obj.target.name}`] = obj.value.value;
+          });
+          const object = resourceGenerator.deployment(values);
+          console.log("object", object);
+          updateKubernetesResourceDefault(object)
+            .then((res) =>
+              console.log(tableGenerator.deploymentSuccessTable(res.body))
+            )
+            .catch((err) => console.log(tableGenerator.errTable(err.body)));
+        } else {
+          console.log("pending");
+        }
+      } else {
+        console.log("query not supported");
+      }
+    }
+    /*
     getResource(resourceList, namespace, resourceName);
-  });
-
-cli.parse(process.argv);
+    */
+  })
+  .addHelpText(
+    "after",
+    `
+  Example:
+    $ ksql -q  "select secret1,secret2 where resource=Secret"
+  `
+  );
+cli.parseAsync(process.argv);

@@ -1,5 +1,5 @@
 {
-  "name": "kubesql",
+  "name": "ksql",
   "version": "1.0.0",
   "description": "kubenernetes SQL based cli ",
   "main": "index.js",
