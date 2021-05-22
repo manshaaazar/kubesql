@@ -217,7 +217,6 @@ module.exports = {
     return {
       apiVersion: "apps/v1",
       kind: "Deployment",
-      ...(values.namespace && { namespace: values.namespace }),
       metadata: {
         name: values.name,
         ...(values.namespace && { namespace: values.namespace }),
@@ -227,7 +226,7 @@ module.exports = {
       },
       spec: {
         selector: { matchLabels: { app: values.name } },
-        ...(values.replicas && { replicas: values.replicas }),
+        ...(values.replicas && { replicas: parseInt(values.replicas) }),
         template: {
           metadata: {
             name: values.name,

@@ -82,6 +82,7 @@ module.exports = {
       }
     });
   },
+
   getKubernetesResourceDefault(object) {
     return new Promise((resolve, reject) => {
       kubernetesApi
