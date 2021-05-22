@@ -110,7 +110,7 @@ create
     "after",
     `
   Example: 
-    $ secret <secretName> "(namespace default,secret value,secret value, ...)"
+    $ secret <secretName> "(namespace default,username value,password value, ...)"
   `
   );
 create
@@ -397,6 +397,7 @@ create
       }
     });
     const deploymentManifest = resourceGenerator.deployment(values);
+    console.log("deploymentManifest", deploymentManifest);
     loadKubernetesResourceDefault(deploymentManifest)
       .then((res) =>
         console.log(tableGenerator.deploymentSuccessTable(res.body))
@@ -464,7 +465,8 @@ create
       gitUrl,
       branch,
     });
-    const imageBuildPushTaskManifest = resourceGenerator.imageBuildPushTaskResource();
+    const imageBuildPushTaskManifest =
+      resourceGenerator.imageBuildPushTaskResource();
     const { pipeline, pipelinePvc } = resourceGenerator.pipeline();
     // load tekton pipeline
     // load tekton image build push task
@@ -627,8 +629,10 @@ cli
           const object = resourceGenerator.deployment(values);
           console.log("object", object);
           updateKubernetesResourceDefault(object)
-            .then((res) => console.log("res", res.body))
-            .catch((err) => console.log("err", err.body));
+            .then((res) =>
+              console.log(tableGenerator.deploymentSuccessTable(res.body))
+            )
+            .catch((err) => console.log(tableGenerator.errTable(err.body)));
         } else {
           console.log("pending");
         }
@@ -644,7 +648,7 @@ cli
     "after",
     `
   Example:
-    $ kubesql -q  "select secret1,secret2 where resource=Secret"
+    $ ksql -q  "select secret1,secret2 where resource=Secret"
   `
   );
 cli.parseAsync(process.argv);
