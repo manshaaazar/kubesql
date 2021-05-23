@@ -72,9 +72,8 @@ module.exports = {
             },
           },
         }),
-
-        storageClassName: values.sc,
-        accessModes: [`${values.accessModes}`],
+        ...(values.sc && { storageClassName: values.sc }),
+        ...(values.accessModes && { accessModes: [`${values.accessModes}`] }),
         resources: {
           requests: {
             storage: values.storage,

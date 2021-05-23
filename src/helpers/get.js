@@ -192,7 +192,7 @@ module.exports = {
           getKubernetesResourceDefault(object)
             .then((res) => {
               console.log("res", res);
-              console.log(tableGenerator.pvcTable(res.body));
+              console.log(tableGenerator.pvcSuccessTable(res.body));
             })
             .catch((err) => {
               console.log("err", err);
