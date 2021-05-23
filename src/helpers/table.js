@@ -263,7 +263,7 @@ module.exports = {
       { strategy: starategyTable },
       { podMetadata: podMetadataTable }
     );
-    console.log("podSpec", podSpec);
+
     podSpec.containers.forEach((container) => {
       const { name, ports } = container || {};
       const containerTable = generateTable({
