@@ -6,6 +6,7 @@ const resourceGenerator = require("./src/helpers/resourceObject");
 const {
   loadKubernetesResourceDefault,
   updateKubernetesResourceDefault,
+  replacepvc,
 } = require("./src/helpers/k8s");
 const tableGenerator = require("./src/helpers/table");
 const _ = require("lodash");
@@ -587,59 +588,67 @@ cli
         // update query logic goes here
         const { into, set, where } = statement[0];
         const { name: resourceName } = into;
-        const { name: resourceType } = where[0].right;
-        if (resourceType === "secret") {
-          console.log("resourceName", resourceName);
-          console.log("resourceType", resourceType);
-          console.log("where",where);
-          const values = {
-            name: resourceName,
-            data: {},
-          };
-          set.forEach((obj) => {
-            values.data[`${obj.target.name}`] = obj.value.value;
-          });
-          console.log("values", values);
-          const object = resourceGenerator.secret(values);
-          console.log("object", object);
-          updateKubernetesResourceDefault(object)
-            .then((res) =>
-              console.log(tableGenerator.secretSuccessTable(res.body))
-            )
-            .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceType === "service") {
-          const values = {
-            name: resourceName,
-          };
-          set.forEach((obj) => {
-            values[`${obj.target.name}`] = obj.value.value;
-          });
-          const object = resourceGenerator.service(values);
-          console.log("object", object);
-          updateKubernetesResourceDefault(object)
-            .then((res) =>
-              console.log(tableGenerator.serviceSuccessTable(res.body))
-            )
-            .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else if (resourceType === "deployment") {
-          const values = {
-            name: resourceName,
-          };
-          set.forEach((obj) => {
-            values[`${obj.target.name}`] = obj.value.value;
-          });
-          const object = resourceGenerator.deployment(values);
-          console.log("object", object);
-          updateKubernetesResourceDefault(object)
-            .then((res) =>
-              console.log(tableGenerator.deploymentSuccessTable(res.body))
-            )
-            .catch((err) => console.log(tableGenerator.errTable(err.body)));
-        } else {
-          console.log("pending");
+        const { operation } = where[0];
+        if (operation === "and") {
+          const { left, right } = where[0];
+          const { left: firstKey, right: firstValue } = left;
+          const { left: secondKey, right: secondValue } = right;
+          if (firstValue.value === "deployment") {
+            const values = {
+              name: resourceName,
+              namespace: secondValue.value ?? "default",
+            };
+            set.forEach((obj) => {
+              values[`${obj.target.name}`] = obj.value.value;
+            });
+            console.log("values", values);
+            const resource = resourceGenerator.deployment(values);
+            console.log("resource", resource);
+            updateKubernetesResourceDefault(resource)
+              .then((res) =>
+                console.log(tableGenerator.deploymentSuccessTable(res.body))
+              )
+              .catch((err) => console.log(tableGenerator.errTable(err.body)));
+          } else if (firstValue.value === "secret") {
+            const values = {
+              name: resourceName,
+              namespace: secondValue.value ?? "default",
+              data: {},
+            };
+            set.forEach((obj) => {
+              values.data[`${obj.target.name}`] = obj.value.value;
+            });
+            console.log("values", values);
+            const resource = resourceGenerator.secret(values);
+            console.log("resource", resource);
+            updateKubernetesResourceDefault(resource)
+              .then((res) =>
+                console.log(tableGenerator.secretSuccessTable(res.body))
+              )
+              .catch((err) => tableGenerator.errTable(err.body));
+          } else if (
+            firstValue.value === "persistentvolumeclaim" ||
+            firstValue.value === "pvc"
+          ) {
+            const values = {
+              name: resourceName,
+              namespace: secondValue.value ?? "default",
+            };
+            set.forEach((obj) => {
+              values[`${obj.target.name}`] = obj.value.value;
+            });
+            console.log("values", values);
+            const resource = resourceGenerator.pvc(values);
+            console.log("resource", resource);
+            updateKubernetesResourceDefault(resource)
+              .then((res) => {
+                console.log(tableGenerator.pvcSuccessTable(res.body));
+              })
+              .catch((err) => console.log(tableGenerator.errTable(err.body)));
+          } else {
+            console.log("resource not supported");
+          }
         }
-      } else {
-        console.log("query not supported");
       }
     }
     /*
