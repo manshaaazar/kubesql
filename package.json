@@ -6,7 +6,7 @@
   "preferGlobal": true,
   "bin": "./index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -30,5 +30,8 @@
     "lodash": "^4.17.21",
     "prettytable": "^0.3.1",
     "sqlite-parser": "^1.0.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }
