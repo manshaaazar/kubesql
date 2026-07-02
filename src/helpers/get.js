@@ -158,7 +158,6 @@ module.exports = {
             kind: "ClusterRole",
             metadata: { name: resource, namespace: namespace },
           };
-          console.log("object", object);
           getKubernetesResourceDefault(object)
             .then((res) =>
               console.log(tableGenerator.roleSuccessTable(res.body))
@@ -187,11 +186,9 @@ module.exports = {
           };
           getKubernetesResourceDefault(object)
             .then((res) => {
-              console.log("res", res);
               console.log(tableGenerator.pvcSuccessTable(res.body));
             })
             .catch((err) => {
-              console.log("err", err);
               console.log(tableGenerator.errTable(err.body));
             });
         } else if (
@@ -205,12 +202,10 @@ module.exports = {
           };
           getKubernetesResourceDefault(object)
             .then((res) => {
-              //console.log("res", res);
               console.log(tableGenerator.pvTable(res.body));
             })
             .catch((err) => {
-              console.log("err", err);
-              //   console.log(tableGenerator.errTable(err.body));
+              console.log(tableGenerator.errTable(err.body));
             });
         } else if (resourceName === "resourcequota") {
           const object = {
@@ -218,7 +213,6 @@ module.exports = {
             kind: "ResourceQuota",
             metadata: { name: resource, namespace: namespace },
           };
-          console.log("object", object);
           getKubernetesResourceDefault(object)
             .then((res) =>
               console.log(tableGenerator.resourceQuotaTable(res.body))
