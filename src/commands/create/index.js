@@ -10,6 +10,8 @@ const registerRole = require('./role');
 const registerRoleBinding = require('./roleBinding');
 const registerClusterRole = require('./clusterRole');
 const registerClusterRoleBinding = require('./clusterRoleBinding');
+const registerImageConfig = require('./imageConfig');
+const registerImageBuilder = require('./imageBuilder');
 
 module.exports = function registerCreate(cli) {
   const create = cli
@@ -38,4 +40,6 @@ module.exports = function registerCreate(cli) {
   registerRoleBinding(create);
   registerClusterRole(create);
   registerClusterRoleBinding(create);
+  registerImageConfig(create);
+  registerImageBuilder(create);
 };
