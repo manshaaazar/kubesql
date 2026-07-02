@@ -2,6 +2,9 @@ const registerNamespace = require('./namespace');
 const registerSecret = require('./secret');
 const registerService = require('./service');
 const registerServiceAccount = require('./serviceAccount');
+const registerDeployment = require('./deployment');
+const registerPersistentVolume = require('./persistentVolume');
+const registerPersistentVolumeClaim = require('./persistentVolumeClaim');
 
 module.exports = function registerCreate(cli) {
   const create = cli
@@ -22,4 +25,7 @@ module.exports = function registerCreate(cli) {
   registerSecret(create);
   registerService(create);
   registerServiceAccount(create);
+  registerDeployment(create);
+  registerPersistentVolume(create);
+  registerPersistentVolumeClaim(create);
 };
