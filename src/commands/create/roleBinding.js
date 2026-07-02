@@ -1,13 +1,14 @@
 const queryParser = require('../../helpers/commandParser');
 const resourceGenerator = require('../../helpers/resourceObject');
 const { loadKubernetesResourceDefault } = require('../../helpers/k8s');
+const tableGenerator = require('../../helpers/table');
 const { handleError } = require('../../helpers/errorHandler');
 
-module.exports = function registerPersistentVolume(create) {
+module.exports = function registerRoleBinding(create) {
   create
-    .command('persistentVolume <name> <keys>')
-    .alias('pv')
-    .description('Create a PersistentVolume')
+    .command('rolebinding <name> <keys>')
+    .alias('rb')
+    .description('Create a RoleBinding')
     .action((name, keys) => {
       const parsedQuery = queryParser.parse(keys);
       const values = { name };
@@ -15,12 +16,12 @@ module.exports = function registerPersistentVolume(create) {
         entry = entry.split(' ');
         values[`${entry[0]}`] = entry[1];
       });
-      loadKubernetesResourceDefault(resourceGenerator.pv(values))
-        .then((res) => console.log(res.body))
+      loadKubernetesResourceDefault(resourceGenerator.roleBinding(values))
+        .then((res) => console.log(tableGenerator.roleBindingSuccessTable(res.body)))
         .catch(handleError);
     })
     .addHelpText('after', `
   Example:
-    $ ksql create persistentVolume <name> "(namespace default,storage 1Gi,accessModes ReadWriteOnce,sc default,reclaimPolicy Retain)"
+    $ ksql create rolebinding <name> "(namespace default,subjectKind ServiceAccount,subjectName my-sa,role my-role)"
 `);
 };

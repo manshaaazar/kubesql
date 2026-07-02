@@ -5,6 +5,11 @@ const registerServiceAccount = require('./serviceAccount');
 const registerDeployment = require('./deployment');
 const registerPersistentVolume = require('./persistentVolume');
 const registerPersistentVolumeClaim = require('./persistentVolumeClaim');
+const registerResourceQuota = require('./resourceQuota');
+const registerRole = require('./role');
+const registerRoleBinding = require('./roleBinding');
+const registerClusterRole = require('./clusterRole');
+const registerClusterRoleBinding = require('./clusterRoleBinding');
 
 module.exports = function registerCreate(cli) {
   const create = cli
@@ -28,4 +33,9 @@ module.exports = function registerCreate(cli) {
   registerDeployment(create);
   registerPersistentVolume(create);
   registerPersistentVolumeClaim(create);
+  registerResourceQuota(create);
+  registerRole(create);
+  registerRoleBinding(create);
+  registerClusterRole(create);
+  registerClusterRoleBinding(create);
 };
