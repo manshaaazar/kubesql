@@ -20,6 +20,7 @@ module.exports = function registerImageConfig(create) {
       const taskManifest = resourceGenerator.imageBuildPushTaskResource();
       const { pipeline, pipelinePvc } = resourceGenerator.pipeline();
 
+      // Tekton infra resources are idempotent — "already exists" on re-runs is expected
       loadKubernetesResourceDefault(taskManifest)
         .then((res) => console.log(tableGenerator.imagebuildPushTaskSuccessTable(res.body)))
         .catch(() => {});
