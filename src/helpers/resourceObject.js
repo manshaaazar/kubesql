@@ -1,5 +1,13 @@
-const { padEnd } = require("lodash");
-const _ = require("lodash");
+// Builds a metadata block, only including optional fields that are present.
+// labels: object mapping labelKey -> value.label (only added if values.label is set)
+const buildMetadata = (values, { labels, annotations } = {}) => ({
+  name: values.name,
+  ...(values.namespace && { namespace: values.namespace }),
+  ...(values.label &&
+    labels && { labels: labels(values.label, values.name) }),
+  ...(annotations && values.annotations && { annotations: values.annotations }),
+});
+
 module.exports = {
   namespace(values) {
     return {
@@ -14,11 +22,7 @@ module.exports = {
     return {
       apiVersion: "v1",
       kind: "Secret",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-        ...(values.annotations && { annotations: values.annotations }),
-      },
+      metadata: buildMetadata(values, { annotations: true }),
       ...(values.type && { type: values.type }),
       stringData: values.data,
     };
@@ -27,10 +31,7 @@ module.exports = {
     return {
       apiVersion: "v1",
       kind: "Service",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      },
+      metadata: buildMetadata(values),
       spec: {
         ...(values.type && { type: values.type }),
         ...(values.app && { selector: { app: values.app } }),
@@ -48,10 +49,7 @@ module.exports = {
     return {
       apiVersion: "v1",
       kind: "ServiceAccount",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      },
+      metadata: buildMetadata(values),
       secrets: values.secrets,
     };
   },
@@ -59,11 +57,7 @@ module.exports = {
     return {
       apiVersion: "v1",
       kind: "PersistentVolumeClaim",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-        ...(values.label && { labels: { pvc: values.label } }),
-      },
+      metadata: buildMetadata(values, { labels: (label) => ({ pvc: label }) }),
       spec: {
         ...(values.pvSelector && {
           selector: {
@@ -86,15 +80,7 @@ module.exports = {
     return {
       apiVersion: "v1",
       kind: "PersistentVolume",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-        ...(values.label && {
-          labels: {
-            pv: values.label,
-          },
-        }),
-      },
+      metadata: buildMetadata(values, { labels: (label) => ({ pv: label }) }),
       spec: {
         volumeModes: "Filesystem",
         capacity: {
@@ -109,66 +95,47 @@ module.exports = {
     };
   },
   resourceQuota(values) {
+    // maps a `values` field to its key in spec.hard (defaults to the same name)
+    const HARD_QUOTA_FIELDS = {
+      configmaps: "configmaps",
+      persistentvolumeclaims: "persistentvolumeclaims",
+      pods: "pods",
+      replicationcontrollers: "replicationcontrollers",
+      secrets: "secrets",
+      services: "services",
+      loadBalancers: "services.loadBalancers",
+      deployments: "deployments.apps",
+      replicasets: "replicasets.apps",
+      statefulsets: "statefulsets.apps",
+      jobs: "jobs.batch",
+      cronjobs: "cronjobs.batch",
+      cpu: "requests.cpu",
+      memory: "requests.memory",
+    };
+    const hard = {};
+    Object.entries(HARD_QUOTA_FIELDS).forEach(([field, key]) => {
+      if (values[field]) hard[key] = values[field];
+    });
     return {
       apiVersion: "v1",
       kind: "ResourceQuota",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      },
-      spec: {
-        hard: {
-          ...(values.configmaps && { configmaps: values.configmaps }),
-          ...(values.persistentvolumeclaims && {
-            persistentvolumeclaims: values.persistentvolumeclaims,
-          }),
-          ...(values.pods && { pods: values.pods }),
-          ...(values.replicationcontrollers && {
-            replicationcontrollers: values.replicationcontrollers,
-          }),
-          ...(values.secrets && { secrets: values.secrets }),
-          ...(values.services && { services: values.services }),
-          ...(values.loadBalancers && {
-            "services.loadBalancers": values.loadBalancers,
-          }),
-          ...(values.deployments && {
-            "deployments.apps": values.deployments,
-          }),
-          ...(values.replicasets && {
-            "replicasets.apps": values.replicasets,
-          }),
-          ...(values.statefulsets && {
-            "statefulsets.apps": values.statefulsets,
-          }),
-          ...(values.jobs && { "jobs.batch": values.jobs }),
-          ...(values.cronjobs && {
-            "cronjobs.batch": values.cronjobs,
-          }),
-          ...(values.cpu && { "requests.cpu": values.cpu }),
-          ...(values.memory && { "requests.memory": values.memory }),
-        },
-      },
+      metadata: buildMetadata(values),
+      spec: { hard },
     };
   },
-  role(values, namespace) {
+  role(values) {
     return {
       apiVersion: "rbac.authorization.k8s.io/v1",
       kind: "Role",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      },
+      metadata: buildMetadata(values),
       rules: values.rules,
     };
   },
-  roleBinding(values, namespace) {
+  roleBinding(values) {
     return {
       apiVersion: "rbac.authorization.k8s.io/v1",
       kind: "RoleBinding",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-      },
+      metadata: buildMetadata(values),
       subjects: [
         {
           kind: values.subjectKind,
@@ -213,25 +180,18 @@ module.exports = {
     };
   },
   deployment(values) {
+    const depLabels = (label, name) => ({ dep: label, app: name });
     return {
       apiVersion: "apps/v1",
       kind: "Deployment",
-      metadata: {
-        name: values.name,
-        ...(values.namespace && { namespace: values.namespace }),
-        ...(values.label && {
-          labels: { dep: values.label, app: values.name },
-        }),
-      },
+      metadata: buildMetadata(values, { labels: depLabels }),
       spec: {
         selector: { matchLabels: { app: values.name } },
         ...(values.replicas && { replicas: parseInt(values.replicas) }),
         template: {
           metadata: {
             name: values.name,
-            ...(values.label && {
-              labels: { dep: values.label, app: values.name },
-            }),
+            ...(values.label && { labels: depLabels(values.label, values.name) }),
           },
           spec: {
             ...(values.volumes && {

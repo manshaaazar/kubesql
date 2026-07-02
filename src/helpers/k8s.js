@@ -7,115 +7,51 @@ const kubernetesApi = kubernetesConfig.makeApiClient(
 );
 const kubeCoreV1API = kubernetesConfig.makeApiClient(kubernetes.CoreV1Api);
 const kubeAppsV1API = kubernetesConfig.makeApiClient(kubernetes.AppsV1Api);
+
+const LIST_RESOURCE_HANDLERS = {
+  namespace: () => kubeCoreV1API.listNamespace("Namespace"),
+  secret: (namespace) => kubeCoreV1API.listNamespacedSecret(namespace),
+  service: (namespace) => kubeCoreV1API.listNamespacedService(namespace),
+  serviceaccount: (namespace) =>
+    kubeCoreV1API.listNamespacedServiceAccount(namespace),
+  resourcequota: (namespace) =>
+    kubeCoreV1API.listNamespacedResourceQuota(namespace),
+  persistentvolumeclaim: (namespace) =>
+    kubeCoreV1API.listNamespacedPersistentVolumeClaim(namespace),
+  pvc: (namespace) =>
+    kubeCoreV1API.listNamespacedPersistentVolumeClaim(namespace),
+  pod: (namespace) => kubeCoreV1API.listNamespacedPod(namespace),
+  persistentvolume: () => kubeCoreV1API.listPersistentVolume(),
+  pv: () => kubeCoreV1API.listPersistentVolume(),
+  event: (namespace) => kubeCoreV1API.listNamespacedEvent(namespace),
+  deployment: (namespace) => kubeAppsV1API.listNamespacedDeployment(namespace),
+};
+
 module.exports = {
   loadKubernetesResourceDefault(object) {
-    return new Promise((resolve, reject) => {
-      kubernetesApi
-        .create(object)
-        .then((result) => resolve(result))
-        .catch((err) => reject(err));
-    });
+    return kubernetesApi.create(object);
   },
   deleteKubernetesResourceDefault(object) {
-    return new Promise((resolve, reject) => {
-      kubernetesApi
-        .delete(object)
-        .then((response) => resolve(response))
-        .catch((err) => reject(err));
-    });
+    return kubernetesApi.delete(object);
   },
   listResources(resourceName, namespace) {
-    return new Promise((resolve, reject) => {
-      if (resourceName === "namespace") {
-        kubeCoreV1API
-          .listNamespace("Namespace")
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName === "secret") {
-        kubeCoreV1API
-          .listNamespacedSecret(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName === "service") {
-        kubeCoreV1API
-          .listNamespacedService(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName === "serviceaccount") {
-        kubeCoreV1API
-          .listNamespacedServiceAccount(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName === "resourcequota") {
-        kubeCoreV1API
-          .listNamespacedResourceQuota(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (
-        resourceName === "persistentvolumeclaim" ||
-        resourceName === "pvc"
-      ) {
-        kubeCoreV1API
-          .listNamespacedPersistentVolumeClaim(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName === "pod") {
-        kubeCoreV1API
-          .listNamespacedPod(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName == "persistentvolume" || resourceName === "pv") {
-        kubeCoreV1API
-          .listPersistentVolume()
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName === "event") {
-        kubeCoreV1API
-          .listNamespacedEvent(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      } else if (resourceName === "deployment") {
-        kubeAppsV1API
-          .listNamespacedDeployment(namespace)
-          .then((res) => resolve(res))
-          .catch((err) => reject(err));
-      }
-    });
+    const handler = LIST_RESOURCE_HANDLERS[resourceName];
+    return handler ? handler(namespace) : Promise.resolve(undefined);
   },
-
   getKubernetesResourceDefault(object) {
-    return new Promise((resolve, reject) => {
-      kubernetesApi
-        .read(object)
-        .then((response) => resolve(response))
-        .catch((err) => reject(err));
-    });
+    return kubernetesApi.read(object);
   },
   updateKubernetesResourceDefault(object) {
-    return new Promise((resolve, reject) => {
-      kubernetesApi
-        .patch(object)
-        .then((res) => resolve(res))
-        .catch((err) => reject(err));
-    });
+    return kubernetesApi.patch(object);
   },
   getPodLogs(name, namespace) {
-    return new Promise((resolve, reject) => {
-      console.log("name", name);
-      console.log("namespace", namespace);
-      kubeCoreV1API
-        .readNamespacedPodLog(name, namespace)
-        .then((res) => resolve(res))
-        .catch((err) => reject(err));
-    });
+    return kubeCoreV1API.readNamespacedPodLog(name, namespace);
   },
-
   replacepvc(name, namespace, body) {
-    return new Promise((resolve, reject) => {
-      kubeCoreV1API
-        .replaceNamespacedPersistentVolumeClaimStatus(name, namespace, body)
-        .then((res) => resolve(res))
-        .catch((err) => reject(err));
-    });
+    return kubeCoreV1API.replaceNamespacedPersistentVolumeClaimStatus(
+      name,
+      namespace,
+      body
+    );
   },
 };
