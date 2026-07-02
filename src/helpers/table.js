@@ -22,10 +22,6 @@ module.exports = {
     const specTable = generateTable(spec);
     const metadataTable = generateTable(metadata);
     const rootTable = generateTable({ kind, apiVersion });
-    //   console.log("spec", specTable);
-    //   console.log("status", statusTable);
-    //  console.log("meta", metadataTable);
-    //  console.log("root", rootTable);
     const rootLevel = new cliTable({
       style: { compact: true, "padding-right": 0, "padding-left": 0 },
       chars: { left: "", right: "", top: "", bottom: "" },
@@ -99,7 +95,6 @@ module.exports = {
     return finalTable;
   },
   pvcSuccessTable({ kind, apiVersion, metadata, spec, status }) {
-    console.log("status", status);
     const { phase } = status;
     const { selector, resources, storageClassName, volumeMode } = spec;
 
@@ -146,7 +141,6 @@ module.exports = {
       status: status?.phase,
       storageClassName: storageClassName ?? "undefined",
     });
-    console.log("accessModes", accessModes);
     const capacityTable = generateTable(capacity);
     const hostTable = generateTable(hostPath);
     const claimRefTable = generateTable(claimRef);

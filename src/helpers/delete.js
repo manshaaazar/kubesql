@@ -73,7 +73,6 @@ module.exports = {
           name: resourceName[1],
         },
       };
-      console.log("Object", object);
       deleteKubernetesResourceDefault(object)
         .then((res) => console.log(tableGenerator.deleteSuccessTable(res.body)))
         .catch((err) => console.log(tableGenerator.deleteErrTable(err.body)));
@@ -83,7 +82,6 @@ module.exports = {
         kind: resource,
         metadata: { name: resourceName[1], namespace: namespace },
       };
-      console.log("Object", object);
       deleteKubernetesResourceDefault(object)
         .then((res) => console.log(tableGenerator.deleteSuccessTable(res.body)))
         .catch((err) => console.log(tableGenerator.deleteErrTable(err.body)));

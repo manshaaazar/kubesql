@@ -56,7 +56,6 @@ module.exports = {
           };
           getKubernetesResourceDefault(object)
             .then((res) => {
-              console.log("res", res.body);
               console.log(tableGenerator.deploymentSuccessTable(res.body));
             })
             .catch((err) => {
@@ -123,7 +122,6 @@ module.exports = {
             kind: "Service",
             metadata: { name: resource, namespace: namespace },
           };
-          console.log("object", object);
           getKubernetesResourceDefault(object)
             .then((res) =>
               console.log(tableGenerator.serviceSuccessTable(res.body))
@@ -138,11 +136,9 @@ module.exports = {
 
           getKubernetesResourceDefault(object)
             .then((res) => {
-              console.log(res.body);
               console.log(tableGenerator.saSuccessTable(res.body));
             })
             .catch((err) => {
-              console.log(err);
               console.log(tableGenerator.errTable(err.body));
             });
         } else if (resourceName === "secret") {
