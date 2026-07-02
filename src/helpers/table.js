@@ -1,7 +1,7 @@
 const cliTable = require("cli-table");
+const table = require("prettytable");
 
 const generateTable = (value) => {
-  const table = require("prettytable");
   if (value.managedFields) {
     delete value.managedFields;
   } else if (value.finalizers) {
